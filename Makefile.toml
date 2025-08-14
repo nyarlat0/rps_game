@@ -1,0 +1,45 @@
+[config]
+default_to_workspace = false
+
+### Backend ###
+
+[tasks.dev-backend]
+script = ["cargo watch -x \"run -p backend\""]
+
+[tasks.run-backend]
+command = "cargo"
+args = ["run", "-r", "-p", "backend"]
+
+### Frontend ###
+
+[tasks.dev-frontend]
+command = "trunk"
+args = ["watch"]
+cwd = "./frontend"
+
+[tasks.build-frontend]
+command = "trunk"
+args = ["build", "--release"]
+cwd = "./frontend"
+
+### Server ###
+
+[tasks.serve-app]
+command = "doas"
+args = ["caddy", "run"]
+
+### Global ###
+
+[tasks.dev]
+run_task = {name = [
+              "serve-app",
+              "dev-backend",
+              "dev-frontend"
+              ], parallel = true}
+
+[tasks.start]
+run_task = { name = [
+              "serve-app",
+              "run-backend"
+              ], parallel = true }
+dependencies = ["build-frontend"]

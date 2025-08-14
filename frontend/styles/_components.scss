@@ -1,0 +1,49 @@
+@use "variables";
+.navbar-overlay {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar {
+  background-color: var(--bg-secondary);
+  padding: var(--s-2);
+  position: absolute;
+  width: 100%;
+  top: 0;
+}
+
+.forum {
+  --nav-h: calc(2.5cap + 2*var(--s-2));
+  position: absolute;
+  top: calc(var(--nav-h) + var(--s-2));
+  right: var(--s-2);
+  z-index: 20;
+  max-width: 30ch;
+
+  transform: translateY(-10rem);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 300ms ease-out,
+  opacity 300ms ease-out;
+  transform-origin: top right; /* nice “from corner” feel */
+}
+
+.forum.is-open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+button.icon-btn {
+  all: unset;
+  display: inline-block;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+
+  &::after {
+    all: unset;
+  };
+}
+

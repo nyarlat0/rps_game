@@ -1,0 +1,11 @@
+/target/
+/frontend/dist/
+/frontend/pkg/
+/frontend/.trunk/
+/**/*.rs.bk
+.DS_Store
+/backend/users.db
+/backend/target/
+/backend/.sqlx/
+/.env
+/.sqlx
