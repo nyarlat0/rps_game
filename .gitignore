@@ -9,3 +9,4 @@
 /backend/.sqlx/
 /.env
 /.sqlx
+*.db
