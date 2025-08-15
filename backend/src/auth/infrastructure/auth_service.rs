@@ -1,7 +1,7 @@
 use crate::auth::domain::*;
 use crate::auth::infrastructure::*;
 use async_trait::async_trait;
-use shared::*;
+use shared::auth::Credentials;
 use sqlx::sqlite::SqlitePool;
 
 pub struct SqliteAuthService

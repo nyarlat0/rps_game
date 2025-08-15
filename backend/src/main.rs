@@ -6,6 +6,7 @@ use sqlx::SqlitePool;
 use std::sync::Arc;
 
 pub mod auth;
+pub mod forum;
 pub mod game;
 
 async fn fallback() -> impl Responder

@@ -1,6 +1,15 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use shared::Credentials;
+use shared::auth::Credentials;
+use sqlx::FromRow;
+
+#[derive(Serialize, Deserialize, FromRow)]
+pub struct User
+{
+    pub id: i64,
+    pub username: String,
+    pub password: String,
+}
 
 #[async_trait]
 pub trait AuthService: Send + Sync

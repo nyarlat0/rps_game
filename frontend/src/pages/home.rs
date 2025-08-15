@@ -1,6 +1,6 @@
 use crate::api::fetch_user_info;
 use leptos::prelude::*;
-use shared::UserInfo;
+use shared::auth::UserInfo;
 
 #[component]
 pub fn Home() -> impl IntoView

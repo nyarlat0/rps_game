@@ -1,7 +1,7 @@
 use crate::{api::login_user, hooks::MyToaster};
 use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
-use shared::Credentials;
+use shared::auth::Credentials;
 use web_sys::SubmitEvent;
 
 #[component]

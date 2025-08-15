@@ -1,5 +1,5 @@
 use crate::game::domain::*;
-use shared::*;
+use shared::game::*;
 use std::sync::Arc;
 
 pub enum WsHandleError

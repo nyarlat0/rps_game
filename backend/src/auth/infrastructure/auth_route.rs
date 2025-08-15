@@ -5,7 +5,7 @@ use actix_web::cookie::{time::Duration, Cookie, SameSite};
 use actix_web::{
     get, post, web, HttpRequest, HttpResponse, Responder,
 };
-use shared::*;
+use shared::auth::*;
 
 pub fn configure_auth(cfg: &mut web::ServiceConfig)
 {

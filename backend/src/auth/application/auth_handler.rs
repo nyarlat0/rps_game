@@ -1,5 +1,5 @@
 use crate::auth::domain::*;
-use shared::*;
+use shared::auth::Credentials;
 use std::sync::Arc;
 
 pub struct AuthHandler

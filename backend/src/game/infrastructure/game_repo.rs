@@ -1,6 +1,6 @@
 use crate::game::application::*;
 use crate::game::domain::*;
-use shared::*;
+use shared::game::*;
 use std::sync::Mutex;
 
 #[derive(Default)]

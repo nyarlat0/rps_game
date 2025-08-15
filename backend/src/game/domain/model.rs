@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use shared::*;
+use shared::game::*;
 use std::sync::Arc;
 
 pub struct WsClosed;
@@ -7,29 +7,36 @@ pub struct WsClosed;
 pub struct GameError;
 
 #[async_trait]
-pub trait WsSession: Send + Sync {
-    async fn send(&self, msg: &str) -> Result<(), WsClosed>;
+pub trait WsSession: Send + Sync
+{
+    async fn send(&self, msg: &str)
+                  -> Result<(), WsClosed>;
 }
 
 #[derive(Clone)]
-pub struct Player {
+pub struct Player
+{
     pub name: String,
     pub session: Arc<dyn WsSession>,
     pub current_move: Option<Move>,
 }
 
-pub struct ActiveGame {
+pub struct ActiveGame
+{
     pub players: [Player; 2],
 }
 
-impl ActiveGame {
-    pub fn new(player: Player, opponent: Player) -> ActiveGame {
-        ActiveGame {
-            players: [player, opponent],
-        }
+impl ActiveGame
+{
+    pub fn new(player: Player,
+               opponent: Player)
+               -> ActiveGame
+    {
+        ActiveGame { players: [player, opponent] }
     }
 
-    pub fn set_move(&mut self, player_name: &str, mv: Move) {
+    pub fn set_move(&mut self, player_name: &str, mv: Move)
+    {
         let [p1, p2] = &mut self.players;
 
         if p1.name == player_name {
@@ -39,12 +46,16 @@ impl ActiveGame {
         }
     }
 
-    pub fn has_player(&self, player_name: &str) -> bool {
+    pub fn has_player(&self, player_name: &str) -> bool
+    {
         let [p1, p2] = &self.players;
         p1.name == player_name || p2.name == player_name
     }
 
-    pub fn get_opp(&self, player_name: &str) -> Option<Player> {
+    pub fn get_opp(&self,
+                   player_name: &str)
+                   -> Option<Player>
+    {
         let [p1, p2] = &self.players;
 
         if p1.name == player_name {
@@ -56,11 +67,17 @@ impl ActiveGame {
         }
     }
 
-    pub fn is_ready(&self) -> bool {
-        self.players.iter().all(|p| p.current_move.is_some())
+    pub fn is_ready(&self) -> bool
+    {
+        self.players
+            .iter()
+            .all(|p| p.current_move.is_some())
     }
 
-    pub fn resolve_for(&self, player_name: &str) -> Option<GameInfo> {
+    pub fn resolve_for(&self,
+                       player_name: &str)
+                       -> Option<GameInfo>
+    {
         if !self.is_ready() {
             return None;
         }

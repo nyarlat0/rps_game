@@ -1,5 +1,5 @@
 use gloo_net::http::Request;
-use shared::{Credentials, UserInfo};
+use shared::auth::*;
 
 pub async fn fetch_user_info() -> Option<UserInfo>
 {
