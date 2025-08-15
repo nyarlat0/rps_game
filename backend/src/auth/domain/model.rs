@@ -1,14 +1,18 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use shared::auth::Credentials;
 use sqlx::FromRow;
+use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, FromRow)]
+#[derive(FromRow)]
 pub struct User
 {
-    pub id: i64,
-    pub username: String,
-    pub password: String,
+    pub id: Uuid,
+    pub name: String,
+    pub password_hash: String,
+    pub created_at: DateTime<Utc>,
+    pub role: String,
 }
 
 #[async_trait]

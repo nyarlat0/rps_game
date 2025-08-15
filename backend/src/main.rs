@@ -2,7 +2,9 @@ use crate::auth::{application::*, infrastructure::*};
 use crate::game::{application::*, infrastructure::*};
 use actix_files as fs;
 use actix_web::{web, App, HttpServer, Responder};
-use sqlx::SqlitePool;
+use dotenvy::dotenv;
+use sqlx::PgPool;
+use std::env;
 use std::sync::Arc;
 
 pub mod auth;
@@ -19,11 +21,14 @@ async fn fallback() -> impl Responder
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
-    let pool = SqlitePool::connect("sqlite://./backend/users.db")
+    dotenv().ok();
+    let db_url = env::var("DATABASE_URL")
+        .expect("Database URL isn't set");
+    let pool = PgPool::connect(&db_url)
         .await
         .expect("Failed to connect to DB");
     let auth_service =
-        Arc::new(SqliteAuthService { db: pool.clone() });
+        Arc::new(PsqlAuthService { db: pool.clone() });
     let auth_handler =
         web::Data::new(AuthHandler { auth_service });
 

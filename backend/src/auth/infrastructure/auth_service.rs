@@ -2,15 +2,15 @@ use crate::auth::domain::*;
 use crate::auth::infrastructure::*;
 use async_trait::async_trait;
 use shared::auth::Credentials;
-use sqlx::sqlite::SqlitePool;
+use sqlx::postgres::PgPool;
 
-pub struct SqliteAuthService
+pub struct PsqlAuthService
 {
-    pub db: SqlitePool,
+    pub db: PgPool,
 }
 
 #[async_trait]
-impl AuthService for SqliteAuthService
+impl AuthService for PsqlAuthService
 {
     async fn register(&self,
                       creds: Credentials)
@@ -18,7 +18,7 @@ impl AuthService for SqliteAuthService
     {
         let hashed = hash_password(&creds.password)?;
         sqlx::query!(
-            "INSERT INTO users (username, password) VALUES (?, ?)",
+            "INSERT INTO users (name, password_hash) VALUES ($1, $2)",
             creds.username,
             hashed
         )
@@ -35,7 +35,7 @@ impl AuthService for SqliteAuthService
     {
         let user = sqlx::query_as!(
             User,
-            "SELECT * FROM users WHERE username = ?",
+            "SELECT * FROM users WHERE name = $1",
             creds.username
         ).fetch_optional(&self.db)
                    .await
@@ -44,7 +44,8 @@ impl AuthService for SqliteAuthService
         let user =
             user.ok_or(AuthError::InvalidCredentials)?;
 
-        verify_password(&creds.password, &user.password)?;
-        generate_jwt(&user.username)
+        verify_password(&creds.password,
+                        &user.password_hash)?;
+        generate_jwt(&user.name)
     }
 }
