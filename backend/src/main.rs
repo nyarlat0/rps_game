@@ -24,9 +24,11 @@ async fn main() -> std::io::Result<()>
     dotenv().ok();
     let db_url = env::var("DATABASE_URL")
         .expect("Database URL isn't set");
+
     let pool = PgPool::connect(&db_url)
         .await
         .expect("Failed to connect to DB");
+
     let auth_service =
         Arc::new(PsqlAuthService { db: pool.clone() });
     let auth_handler =

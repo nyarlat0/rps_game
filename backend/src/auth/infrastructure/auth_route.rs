@@ -1,6 +1,6 @@
 use crate::auth::application::AuthHandler;
 use crate::auth::domain::AuthError;
-use crate::auth::infrastructure::extract_username;
+use crate::auth::infrastructure::extract_id;
 use actix_web::cookie::{time::Duration, Cookie, SameSite};
 use actix_web::{
     get, post, web, HttpRequest, HttpResponse, Responder,
@@ -82,10 +82,24 @@ pub async fn logout() -> impl Responder
 }
 
 #[get("/me")]
-pub async fn whoami(req: HttpRequest) -> impl Responder
+pub async fn whoami(handler: web::Data<AuthHandler>,
+                    req: HttpRequest)
+                    -> impl Responder
 {
-    if let Some(username) = extract_username(&req) {
-        HttpResponse::Ok().json(UserInfo { username })
+    if let Some(id) = extract_id(&req) {
+        match handler.get_userinfo(id).await {
+            Ok(info) => HttpResponse::Ok().json(info),
+
+            Err(AuthError::InvalidCredentials) => {
+                HttpResponse::Unauthorized()
+                    .body("Wrong username or password!")
+            }
+
+            Err(_) => {
+                HttpResponse::InternalServerError()
+                    .body("Login failed.")
+            }
+        }
     } else {
         HttpResponse::Unauthorized().body("Not logged in")
     }

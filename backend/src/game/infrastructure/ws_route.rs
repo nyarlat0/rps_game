@@ -1,4 +1,5 @@
-use crate::auth::infrastructure::extract_username;
+use crate::auth::application::AuthHandler;
+use crate::auth::infrastructure::extract_id;
 use crate::game::application::WsHandler;
 use crate::game::domain::{Player, WsClosed, WsSession};
 use actix_web::{get, web, HttpRequest, HttpResponse};
@@ -34,16 +35,26 @@ impl WsSession for Session
 pub async fn game_route(
     req: HttpRequest,
     stream: web::Payload,
-    handler: web::Data<WsHandler>)
+    handler: web::Data<WsHandler>,
+    auth_handler: web::Data<AuthHandler>)
     -> actix_web::Result<HttpResponse>
 {
-    // Extract username from cookie (or use query param)
-    let username = match extract_username(&req) {
-        Some(name) => name,
+    let id = match extract_id(&req) {
+        Some(id) => id,
         None => {
             return Ok(HttpResponse::Unauthorized().body("Not logged in!"));
         }
     };
+
+    let userinfo = match auth_handler.get_userinfo(id).await
+    {
+        Ok(info) => info,
+        Err(_) => {
+            return Ok(HttpResponse::Unauthorized().body("Not logged in!"));
+        }
+    };
+
+    let username = userinfo.username;
 
     let (response, session, mut msg_stream) =
         handle(&req, stream)?;

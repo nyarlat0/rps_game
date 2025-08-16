@@ -2,7 +2,9 @@ use crate::auth::domain::*;
 use crate::auth::infrastructure::*;
 use async_trait::async_trait;
 use shared::auth::Credentials;
+use shared::auth::UserInfo;
 use sqlx::postgres::PgPool;
+use uuid::Uuid;
 
 pub struct PsqlAuthService
 {
@@ -46,6 +48,23 @@ impl AuthService for PsqlAuthService
 
         verify_password(&creds.password,
                         &user.password_hash)?;
-        generate_jwt(&user.name)
+        generate_jwt(&user.id)
+    }
+
+    async fn get_userinfo(&self,
+                          id: Uuid)
+                          -> Result<UserInfo, AuthError>
+    {
+        let user = sqlx::query_as!(
+            User,
+            "SELECT * FROM users WHERE id = $1",
+            id
+        ).fetch_optional(&self.db)
+                   .await
+                   .map_err(|_| AuthError::DatabaseError)?;
+
+        let user =
+            user.ok_or(AuthError::InvalidCredentials)?;
+        Ok(user.into())
     }
 }
