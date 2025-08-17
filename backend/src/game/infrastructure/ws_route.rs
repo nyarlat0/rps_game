@@ -2,7 +2,7 @@ use crate::auth::application::AuthHandler;
 use crate::auth::infrastructure::extract_id;
 use crate::game::application::WsHandler;
 use crate::game::domain::{Player, WsClosed, WsSession};
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, rt, web, HttpRequest, HttpResponse};
 use actix_ws::{handle, Message, Session};
 use async_trait::async_trait;
 use futures_util::StreamExt;
@@ -63,7 +63,7 @@ pub async fn game_route(
                           session: Arc::new(session),
                           current_move: None };
 
-    actix_rt::spawn(async move {
+    rt::spawn(async move {
         while let Some(Ok(msg)) = msg_stream.next().await {
             match msg {
                 Message::Text(text) => {

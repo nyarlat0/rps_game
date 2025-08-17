@@ -1,5 +1,6 @@
 use crate::auth::{application::*, infrastructure::*};
 use crate::game::{application::*, infrastructure::*};
+use crate::ws::*;
 use actix_files as fs;
 use actix_web::{web, App, HttpServer, Responder};
 use dotenvy::dotenv;
@@ -10,6 +11,7 @@ use std::sync::Arc;
 pub mod auth;
 pub mod forum;
 pub mod game;
+pub mod ws;
 
 async fn fallback() -> impl Responder
 {
@@ -46,6 +48,7 @@ async fn main() -> std::io::Result<()>
             .app_data(shared_handler.clone())
             .service(web::scope("/api/auth").configure(configure_auth))
             .service(web::scope("/api/game").configure(configure_game))
+            .service(web::scope("/api").configure(configure_ws))
             .service(fs::Files::new("/", "./frontend/dist").index_file("index.html"))
             .default_service(web::get().to(fallback))
     })
