@@ -1,12 +1,12 @@
 :root {
   font-size: 15px;
-  --bg: #1c151c;
-  --bg-secondary: #2a1f2a;
+  --bg: oklch(20.0% 0.019 157.7);
+  --bg-secondary: oklch(25.0% 0.019 155.7);
   --text: #f8ddf3;
-  --accent: #e052c0;
-  --accent-hover: #ffa6e8;
-  --accent-glow: #ffd6f5;
-  --border: #7e3c72;
+  --accent: oklch(60.0% 0.212 337.7);
+  --accent-hover: oklch(66.4% 0.212 307.7);
+  --accent-glow: oklch(70.4% 0.212 307.7);
+  --border: oklch(25.0% 0.019 127.7);
   --error: #d46a7a;
   --success: #5d8975;
   --info: #453545;
