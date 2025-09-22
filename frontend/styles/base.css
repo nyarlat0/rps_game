@@ -1,0 +1,140 @@
+@font-face{
+  font-family:"Nunito";
+  src:url("/fonts/Nunito-VariableFont_wght.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-style:normal;
+  font-display:swap;
+}
+
+@layer base {
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scrollbar-gutter: stable both-edges;
+    hanging-punctuation: first last;
+  }
+
+  body {
+    margin: 0;
+    font:
+      400 1rem/1.5 "Nunito",
+      system-ui,
+      sans-serif;
+    text-wrap: pretty;
+    background: linear-gradient(
+      to bottom,
+      oklch(from var(--bg) calc(l + 0.1) c h),
+      oklch(from var(--bg) calc(l - 0.1) c h)
+      );
+    color: var(--ink);
+
+    --leptoaster-info-background-color: var(--surface);
+    --leptoaster-info-border-color: oklch(from var(--surface) calc(l + 0.05) c h);
+    --leptoaster-info-text-color: var(--ink);
+    --leptoaster-success-background-color: var(--success);
+    --leptoaster-success-border-color: oklch(from var(--success) calc(l + 0.05) c h);
+    --leptoaster-success-text-color: var(--ink);
+    --leptoaster-error-background-color: var(--error);
+    --leptoaster-error-border-color: oklch(from var(--error) calc(l + 0.05) c h);
+    --leptoaster-error-text-color: var(--ink);
+  }
+
+  h1, h2, h3, h4 { text-wrap: balance; }
+  h1, h2 {
+    text-align: center;
+  }
+
+  input {
+    display: block;
+    width: 100%;
+    margin: 0;
+  }
+  label {
+    display: block;
+  }
+
+  :root {
+    --base-hue: 350deg;
+    --base-light: 0.7;
+
+    --brand: oklch(70.0% 0.120 350.0);
+    --ink:oklch(20% 0.03 350);
+    --bg: oklch(80% 0.12 300);
+    --surface: oklch(95% 0.0 145);
+    --success: oklch(70.0% 0.120 170.0);
+    --error: oklch(70% 0.18 350);
+
+    --brand-strong: color-mix(in oklab, var(--brand), black 15%);
+    --brand-weak:   oklch(from var(--brand) l calc(c * 0.6) h / 85%);
+    --focus: oklch(from var(--brand) calc(l + 0.1) c h);
+
+    accent-color: var(--brand);
+
+    --ratio: 1.5;
+    --s-6: calc(var(--s-5) / var(--ratio));
+    --s-5: calc(var(--s-4) / var(--ratio));
+    --s-4: calc(var(--s-3) / var(--ratio));
+    --s-3: calc(var(--s-2) / var(--ratio));
+    --s-2: calc(var(--s-1) / var(--ratio));
+    --s-1: calc(var(--s0) / var(--ratio));
+    --s0: 1rem;
+    --s1: calc(var(--s0) * var(--ratio));
+    --s2: calc(var(--s1) * var(--ratio));
+    --s3: calc(var(--s2) * var(--ratio));
+    --s4: calc(var(--s3) * var(--ratio));
+    --s5: calc(var(--s4) * var(--ratio));
+
+    --measure: 50ch;
+
+    --radius: var(--s0);
+    --padding: var(--s-1) var(--s0);
+
+    --outline: var(--s-5) solid var(--focus);
+
+    --border: var(--s-6) solid
+      oklch(from var(--surface) calc(l - 0.03) c h / .6);
+
+    --shadow-low: var(--s-4) var(--s-3) var(--s-3) oklch(0% 0 0 / 45%);
+    --shadow: var(--s-3) var(--s-2) var(--s-2) oklch(0% 0 0 / 40%);
+    --shadow-high: var(--s-2) var(--s-1) var(--s-1) oklch(0% 0 0 / 25%);
+
+    --transition-fast: 0.2s ease;
+    --transition-slow: 0.4s ease-in-out;
+  }
+
+  :root.light { color-scheme: light; }
+  :root.dark  {
+    color-scheme: dark;
+    --ink: oklch(90% 0.02 350);
+    --bg: oklch(20% 0.12 300);
+    --surface: oklch(30% 0.0 145);
+    --success: oklch(35.0% 0.120 170.0);
+    --error: oklch(30% 0.18 350);
+  }
+
+  
+
+  ::selection {
+    background: var(--focus);
+    color: oklch(from var(--focus) calc(1.0 - l) c h);
+  }
+  svg { fill: currentColor; stroke: currentColor; }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    nav, aside, .no-print { display: none !important; }
+    main { break-inside: avoid; }
+  }
+
+  /* High contrast / forced colors care */
+  @media (forced-colors: active) {
+    :root { color: CanvasText; background: Canvas; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --bg: #111; --ink: #fff; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {transition: none}
+  }
+}

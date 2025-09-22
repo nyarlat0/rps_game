@@ -9,16 +9,16 @@ use leptos_router::path;
 pub fn App() -> impl IntoView
 {
     provide_toaster();
-    let (visible, set_visible) = signal(false);
+    let (visible_forum, set_visible_forum) = signal(false);
 
     view! {
         <Toaster />
         <Router>
-            <div class="navbar-overlay">
-            <NavBar set_visible />
-            <Forum visible />
-            </div>
-            <main>
+            <header class="site-header">
+            <NavBar set_visible_forum/>
+            </header>
+
+            <main class="center cover-center">
                 <Routes fallback=|| "Not found.">
                     <Route path=path!("/") view=Home />
                     <Route path=path!("/register") view=Register />
@@ -27,6 +27,20 @@ pub fn App() -> impl IntoView
                     <Route path=path!("/mmmvpn") view=MMMVPN />
                 </Routes>
             </main>
+            <footer class="site-footer">
+                <nav
+                    aria-label="Footer"
+                    class="cluster"
+                    style="--cluster-justify: flex-end; --cluster-gap: var(--s1)"
+                >
+                    <a>"Donate"</a>
+                    <a>"About"</a>
+                    <a>"Contact"</a>
+                </nav>
+            </footer>
+
+            <Forum visible_forum />
+            <Settings />
         </Router>
     }
 }

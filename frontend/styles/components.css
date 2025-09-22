@@ -1,0 +1,198 @@
+@layer components {
+
+  .site-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    background: color-mix(in oklch, var(--surface), black 5%);
+    box-shadow: 0 var(--s-2) var(--s-1) oklch(0% 0 0 / 25%);
+  }
+
+  /* Footer just sits at the bottom row */
+  .site-footer {
+    padding: 0 var(--s-2);
+    background: color-mix(in oklch, var(--surface), black 3%);
+  }
+
+
+  .card, [popover] {
+    color: var(--ink);
+    background: var(--surface);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: var(--padding);
+
+    inline-size: fit-content;
+    max-inline-size: min(60ch, calc(100dvi - 2rem));
+    overflow-wrap: anywhere;
+
+    box-shadow: var(--shadow);
+  }
+
+  [popover] {
+    opacity: 0;
+    transform: scale(0);
+
+    transition:
+      display .3s allow-discrete,
+      overlay .3s allow-discrete,
+      opacity 0.3s,
+      transform 0.3s;
+  }
+  [popover]:popover-open {
+    box-shadow: 0 0 var(--s1) var(--focus);
+
+    opacity: 1;
+    transform: scale(1);
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0);
+    }
+  }
+  [popover]::backdrop{
+    background-color: transparent;
+    backdrop-filter: blur(0);
+
+    transition:
+      display .3s allow-discrete,
+      overlay .3s allow-discrete,
+      backdrop-filter .3s,
+      background-color .3s;
+  }
+
+  [popover]:popover-open::backdrop {
+    backdrop-filter: blur(var(--s-2));
+    background-color: oklch(0 0 0 / 50%);
+
+    @starting-style {
+      backdrop-filter: blur(0);
+      background-color: transparent;
+    }
+  }
+
+  .icon {
+    inline-size: 2.5cap;
+    block-size: 2.5cap;
+    aspect-ratio: 1;
+    display: inline-block;
+    margin: 0 var(--s-2);
+    vertical-align: middle;
+    fill: currentColor;
+    stroke: currentColor;
+  }
+
+  /* Safe, minimal button reset */
+  button.icon-btn {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    padding: var(--s-2);
+    margin: 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5ch;
+    cursor: pointer;
+
+    /* Hit area & shape */
+    border-radius: var(--radius);
+
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;  /* avoids 300ms delays on old mobile stacks */
+
+    &:hover {
+      box-shadow: none;
+      background: oklch(from var(--surface) calc(l + 0.05) c h / 50%);
+
+    }
+    &:focus-visible {
+      outline: var(--brand);
+    }
+    & > .icon {
+      pointer-events: none;
+      margin: 0;
+    }
+  }
+
+  .forum {
+    --nav-h: calc(2.5cap + 2*var(--s-2));
+    --forum-h: calc(var(--nav-h) + var(--s-2));
+    position: fixed;
+    top: var(--forum-h);
+    right: var(--s-2);
+    z-index: 20;
+    max-width: 30ch;
+    box-shadow: var(--shadow-high);
+    pointer-events: none;
+
+    transform: translateY(-100%);
+    opacity: 0;
+    display: none;
+    transition-timing-function: ease-in;
+    transition:
+      opacity .3s,
+      display .3s allow-discrete,
+      transform .3s;
+  }
+
+  .forum.active {
+    opacity: 1;
+    transform: translateY(0);
+    display: block;
+    pointer-events: auto;
+    transition-timing-function: ease-out;
+    @starting-style {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+
+  button, .button {
+    font: inherit;
+    color: white;
+    display: block;
+    font-weight: 700;
+    text-decoration: none;
+    background: var(--brand);
+    border: none;
+    border-radius: var(--radius);
+    padding: var(--s-1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    transition:
+      background 0.3s,
+      box-shdow 0.3s;
+    &:hover{
+      background: var(--focus);
+      box-shadow: 0 0 var(--s0) oklch(from var(--focus) l c h / 50%);
+    }
+  }
+  a.button {
+    display: block;
+    text-decoration: none;
+    text-align: center;
+  }
+
+  @keyframes spinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+  }
+
+  .loading-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0.3rem solid transparent;
+    border-top: 0.3rem solid var(--brand);
+    border-radius: 50%;
+    animation: spinner 1s linear infinite;
+    margin: 1rem auto;
+  }
+
+}

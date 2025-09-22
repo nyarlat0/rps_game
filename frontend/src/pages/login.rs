@@ -38,12 +38,11 @@ pub fn Login() -> impl IntoView
     };
 
     view! {
-        <div class="v-center">
-        <form on:submit=on_submit class="card stack">
+        <form on:submit=on_submit class="card stack fill-page">
             <h1 class="text-center">"Log In"</h1>
 
             <label for="username">"Username:"</label>
-            <div class="stack" style="--space: var(--s-1)">
+            <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="username"
                 type="text"
@@ -56,7 +55,7 @@ pub fn Login() -> impl IntoView
             />
             </div>
             <label for="password">"Password:"</label>
-            <div class="stack" style="--space: var(--s-1)">
+            <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="password"
                 type="password"
@@ -69,7 +68,7 @@ pub fn Login() -> impl IntoView
             />
             </div>
 
-            <div class="stack" style="--space: var(--s2)">
+            <div class="stack" style="--stack-gap: var(--s2)">
             <button type="submit">
                 "Log in"
             </button>
@@ -86,6 +85,5 @@ pub fn Login() -> impl IntoView
             </div>
             </div>
         </form>
-        </div>
     }
 }

@@ -1,7 +1,8 @@
 use leptos::prelude::*;
 
 #[component]
-pub fn Forum(visible: ReadSignal<bool>) -> impl IntoView
+pub fn Forum(visible_forum: ReadSignal<bool>)
+             -> impl IntoView
 {
     let (message, set_message) = signal(String::new());
 
@@ -16,7 +17,7 @@ pub fn Forum(visible: ReadSignal<bool>) -> impl IntoView
     view! {
         <div
             class="card stack forum"
-            class:is-open=move || visible.get()
+            class:active=move || visible_forum.get()
         >
             <h3>"Forum"</h3>
 

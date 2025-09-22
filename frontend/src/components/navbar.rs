@@ -6,7 +6,7 @@ use leptos_use::{
 };
 
 #[component]
-pub fn NavBar(set_visible: WriteSignal<bool>)
+pub fn NavBar(set_visible_forum: WriteSignal<bool>)
               -> impl IntoView
 {
     let UseColorModeReturn { mode, set_mode, .. } =
@@ -18,7 +18,10 @@ pub fn NavBar(set_visible: WriteSignal<bool>)
     );
 
     view! {
-        <div class="cluster navbar" style="justify-content: space-between">
+        <nav
+        class="cluster navbar"
+        style="--cluster-justify: space-between"
+        aria-label="Primary">
             <a href="/">
             { move || match mode.get() {
                 ColorMode::Dark => view! {
@@ -34,7 +37,12 @@ pub fn NavBar(set_visible: WriteSignal<bool>)
             }
             </a>
 
-            <div class="cluster">
+            //<div class="loading-spinner"></div>
+
+            <div
+            class="cluster"
+            style="--cluster-gap: 0;"
+            >
             <button
                 class="icon-btn"
                 title="Toggle theme"
@@ -62,13 +70,23 @@ pub fn NavBar(set_visible: WriteSignal<bool>)
                 class="icon-btn"
                 title="Toggle forum"
                 aria-label="Toggle forum"
-                on:click=move |_| set_visible.update(|value| *value = !*value)
+                on:click=move |_| set_visible_forum.update(|value| *value = !*value)
             >
                 <svg class="icon" alt="Toggle forum">
                     <use href="icons.svg#message-square"></use>
                 </svg>
             </button>
+            <button
+                class="icon-btn"
+                title="Toggle settings"
+                aria-label="Toggle settings"
+                popovertarget="settings"
+            >
+                <svg class="icon" alt="Toggle settings">
+                    <use href="icons.svg#settings"></use>
+                </svg>
+            </button>
             </div>
-        </div>
+        </nav>
     }
 }

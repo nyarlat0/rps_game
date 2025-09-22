@@ -1,0 +1,173 @@
+/* Every Layout — modern CSS primitives (utilities layer) */
+@layer utilities {
+  /* ───────────────── Stack ─────────────────
+     Vertical flow with controllable rhythm (RTL/vertical-writing safe) */
+  /*:where(.stack) { display: block; }*/
+  :where(.stack > * + *) {
+    margin-block-start: var(--stack-gap, 1rem);
+  }
+
+  /* ───────────────── Cluster ───────────────
+     Inline grouping with wrapping, gap, alignment */
+  :where(.cluster) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cluster-gap, var(--s-1));
+    align-items: var(--cluster-align, center);
+    justify-content: var(--cluster-justify, flex-start);
+  }
+
+  /* ───────────────── Center ────────────────
+     Horizontally center content and constrain measure */
+  :where(.center) {
+    box-sizing: content-box;
+    margin-inline: auto;
+    max-inline-size: var(--center, 70ch);
+    padding-inline: var(--center-pad, 1rem);
+  }
+
+  /* ───────────────── Switcher ──────────────
+     Auto switch from single column to N columns based on available space */
+  :where(.switcher) {
+    display: grid;
+    gap: var(--switcher-gap, 1rem);
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(var(--switcher-min, 16rem), 100%), 1fr)
+    );
+  }
+
+  /* ───────────────── Sidebar ───────────────
+     Fluid sidebar + content. Collapses to single column below a threshold. */
+  :where(.sidebar) {
+    display: grid;
+    gap: var(--sidebar-gap, 1rem);
+    grid-template-columns:
+      minmax(min(12rem, 35%), var(--sidebar-size, 20rem))
+      minmax(0, 1fr);
+    align-items: start;
+    container-type: inline-size;                  /* enable CQ for collapse */
+  }
+  @container (width < 42rem) {
+    :where(.sidebar) { grid-template-columns: 1fr; }
+  }
+  /* Optional reversed variant */
+  :where(.sidebar-rev) {
+    display: grid;
+    gap: var(--sidebar-gap, 1rem);
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(min(12rem, 35%), var(--sidebar-size, 20rem));
+    container-type: inline-size;
+  }
+  @container (width < 42rem) {
+    :where(.sidebar-rev) { grid-template-columns: 1fr; }
+  }
+
+  /* ───────────────── Cover ─────────────────
+     Fill the viewport and center a child; pin header/footer if present */
+  :where(.cover) {
+    min-block-size: 100dvb;                       /* dynamic mobile UI safe */
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+  :where(.cover > .cover-center) {
+    place-self: center;
+    max-inline-size: var(--cover-measure, 70ch);
+    padding: var(--cover-pad, 1rem);
+  }
+
+  /* ───────────────── Reel ──────────────────
+     Horizontal scroller with snap; track width scales to container */
+  :where(.reel) {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(var(--reel-min, 16rem), calc(100cqw - 2rem));
+    gap: var(--reel-gap, 1rem);
+    overflow-x: auto;
+    scroll-snap-type: inline mandatory;
+    padding-inline: var(--reel-pad, 1rem);
+  }
+  :where(.reel > *) { scroll-snap-align: start; }
+
+  /* ───────────────── Grid (dense) ──────────
+     Compact auto-fill grid; lets smaller items back-fill gaps */
+  :where(.grid) {
+    display: grid;
+    gap: var(--grid-gap, 1rem);
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(var(--grid-cell, 12rem), 1fr)
+    );
+    grid-auto-flow: dense;
+    align-items: start;
+  }
+
+  /* ───────────────── Masonry (gated) ───────
+     Real masonry rows where supported; falls back to .grid above */
+  @supports (grid-template-rows: masonry) {
+    :where(.masonry) {
+      display: grid;
+      gap: var(--grid-gap, 1rem);
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(var(--grid-cell, 16rem), 1fr)
+      );
+      grid-template-rows: masonry;
+      align-tracks: start;
+    }
+  }
+
+  /* ───────────────── Subgrid helpers ───────
+     Align inner grids to outer tracks (cards, media+text, forms) */
+  :where(.grid-outer) {
+    display: grid;
+    gap: var(--grid-gap, 1rem);
+    grid-template-columns: var(--outer-cols, 1fr 1fr);
+  }
+  :where(.subgrid) {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1; /* span full width of outer grid tracks */
+    gap: var(--grid-gap, 1rem);
+  }
+
+  /* ───────────────── Box ───────────────────
+     Padded container; uses logical props for instant RTL/vertical support */
+  :where(.box) {
+    padding: var(--box-pad, 1rem);
+    border: var(--box-border, 1px solid CanvasText);
+    border-radius: var(--box-radius, 12px);
+  }
+
+  /* ───────────────── Frame ─────────────────
+     Aspect-ratio wrapper; overflow clipped but shadows can glow via margin */
+  :where(.frame) {
+    aspect-ratio: var(--ratio, 16/9);
+    overflow: clip;
+    overflow-clip-margin: var(--frame-ocm, 12px);
+    border-radius: var(--frame-radius, 12px);
+  }
+
+  /* ───────────────── Imposter ──────────────
+     Center an overlay without removing it from normal flow context */
+  :where(.imposter) {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    inline-size: min(100%, var(--imp-w, 60ch));
+    block-size: min(100%, var(--imp-h, 80dvb));
+  }
+
+  /* ───────────────── Utilities ─────────────
+     Small helpers commonly paired with the primitives */
+  :where(.contents) { display: contents; }                      /* keep semantics, lose box */
+  :where(.ratio-1-1) { aspect-ratio: 1; }
+  :where(.ratio-4-3) { aspect-ratio: 4/3; }
+  :where(.ratio-16-9){ aspect-ratio: 16/9; }
+
+  :where(.fill-page) {
+    min-inline-size: max(30ch, 30dvw);
+  }
+}
+
