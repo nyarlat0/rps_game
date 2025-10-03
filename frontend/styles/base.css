@@ -8,7 +8,10 @@
 
 @layer base {
 
-  *, *::before, *::after { box-sizing: border-box; }
+  *, *::before, *::after {
+    box-sizing: border-box;
+    /* margin: 0; */
+  }
 
   html {
     scrollbar-gutter: stable both-edges;
@@ -29,15 +32,20 @@
       );
     color: var(--ink);
 
-    --leptoaster-info-background-color: var(--surface);
-    --leptoaster-info-border-color: oklch(from var(--surface) calc(l + 0.05) c h);
-    --leptoaster-info-text-color: var(--ink);
+    --leptoaster-font-family: "Nunito";
+    --leptoaster-font-size: 1rem;
+
+    --leptoaster-info-background-color: var(--info);
+    --leptoaster-info-border-color: oklch(from var(--info) calc(l + 0.05) c h);
+    --leptoaster-info-text-color: var(--mes-ink);
+
     --leptoaster-success-background-color: var(--success);
     --leptoaster-success-border-color: oklch(from var(--success) calc(l + 0.05) c h);
-    --leptoaster-success-text-color: var(--ink);
+    --leptoaster-success-text-color: var(--mes-ink);
+
     --leptoaster-error-background-color: var(--error);
     --leptoaster-error-border-color: oklch(from var(--error) calc(l + 0.05) c h);
-    --leptoaster-error-text-color: var(--ink);
+    --leptoaster-error-text-color: var(--mes-ink);
   }
 
   h1, h2, h3, h4 { text-wrap: balance; }
@@ -46,28 +54,98 @@
   }
 
   input {
-    display: block;
     width: 100%;
     margin: 0;
+    text-decoration: none;
   }
+
+  input,
+  textarea {
+    font: inherit;
+    background: var(--surface-deep);
+    border-style: solid;
+    border-color: transparent;
+    border-width: var(--s-5);
+    border-radius: var(--radius);
+    padding: var(--s-1);
+    transition: border-color 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: var(--focus);
+    }
+  }
+
   label {
     display: block;
   }
 
+  a {
+    color: var(--brand);
+    text-decoration: none;
+
+    transition: color 0.2s;
+    &:hover {
+      color: var(--focus);
+      text-decoration: underline;
+    }
+  }
+
   :root {
-    --base-hue: 350deg;
-    --base-light: 0.7;
+    --test-color: oklch(0 0 0);
 
-    --brand: oklch(70.0% 0.120 350.0);
-    --ink:oklch(20% 0.03 350);
-    --bg: oklch(80% 0.12 300);
-    --surface: oklch(95% 0.0 145);
-    --success: oklch(70.0% 0.120 170.0);
-    --error: oklch(70% 0.18 350);
+    /* c 0.11 lets l: 0.65 - 0.79 */
+    /* c 0.10 lets l: 0.59 - 0.80 */
+    /* c 0.09 lets l: 0.53 - 0.81 */
+    /* c 0.08 lets l: 0.48 - 0.83 */
 
-    --brand-strong: color-mix(in oklab, var(--brand), black 15%);
-    --brand-weak:   oklch(from var(--brand) l calc(c * 0.6) h / 85%);
-    --focus: oklch(from var(--brand) calc(l + 0.1) c h);
+    /* variation 0.65 - 0.75 */
+    --light: calc(0.7 + var(--set-light, 0));
+    --hue: calc(350 + var(--set-hue, 0));
+
+
+    --brand: oklch(
+      var(--light)
+      0.11
+      var(--hue)
+      );
+
+    --focus: oklch(from var(--brand) calc(l + 0.05) c h); /* variation 0.7 - 0.8 */
+
+    --cold-hue: calc(var(--hue) - 50);
+    --bg: oklch(
+      calc(var(--light) - 0.05) /* gradient variation 0.50 - 0.80 */
+      0.08
+      var(--cold-hue)
+      );
+
+    --surface: oklch(calc(var(--set-light) + 0.95) 0 var(--cold-hue)); /* 0.9 - 1.0 */
+    --surface-deep: oklch(from var(--surface) calc(l - 0.05) c h);
+    --border: oklch(from var(--surface) calc(l - 0.1) c h);
+
+    --ink: oklch(
+      from var(--surface)
+      calc(l - 0.65)
+      0
+      var(--hue)
+      );
+    --muted: oklch(from var(--ink) calc(l - 0.05) c h);
+
+    --info: var(--bg);
+    --success: oklch(
+      from var(--bg)
+      l
+      0.08
+      calc(h - 180)
+      );
+    --error: oklch(
+      from var(--bg)
+      l
+      0.18
+      var(--hue)
+      );
+    --mes-ink:white;
+
 
     accent-color: var(--brand);
 
@@ -85,8 +163,6 @@
     --s4: calc(var(--s3) * var(--ratio));
     --s5: calc(var(--s4) * var(--ratio));
 
-    --measure: 50ch;
-
     --radius: var(--s0);
     --padding: var(--s-1) var(--s0);
 
@@ -98,22 +174,33 @@
     --shadow-low: var(--s-4) var(--s-3) var(--s-3) oklch(0% 0 0 / 45%);
     --shadow: var(--s-3) var(--s-2) var(--s-2) oklch(0% 0 0 / 40%);
     --shadow-high: var(--s-2) var(--s-1) var(--s-1) oklch(0% 0 0 / 25%);
-
-    --transition-fast: 0.2s ease;
-    --transition-slow: 0.4s ease-in-out;
   }
 
   :root.light { color-scheme: light; }
   :root.dark  {
     color-scheme: dark;
-    --ink: oklch(90% 0.02 350);
-    --bg: oklch(20% 0.12 300);
-    --surface: oklch(30% 0.0 145);
-    --success: oklch(35.0% 0.120 170.0);
-    --error: oklch(30% 0.18 350);
+    --bg: oklch(
+      calc(var(--light) - 0.5)
+      0.08
+      var(--cold-hue)
+      );
+    --surface: oklch(calc(var(--set-light) + 0.3) 0 0);
+    --ink: oklch(calc(0.95 + var(--set-light)) 0 0);
+
+    --info: oklch(from var(--surface) calc(l + 0.05) c h);
+    --success: oklch(
+      calc(var(--set-light) + 0.53)
+      0.08
+      calc(var(--cold-hue) - 180)
+      );
+    --error: oklch(
+      calc(var(--set-light) + 0.53)
+      0.18
+      var(--hue)
+      );
   }
 
-  
+
 
   ::selection {
     background: var(--focus);

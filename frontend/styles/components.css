@@ -12,6 +12,12 @@
   .site-footer {
     padding: 0 var(--s-2);
     background: color-mix(in oklch, var(--surface), black 3%);
+    & > nav > a {
+      color: var(--muted);
+      &:hover {
+        color: var(--brand);
+      }
+    }
   }
 
 
@@ -193,6 +199,38 @@
     border-radius: 50%;
     animation: spinner 1s linear infinite;
     margin: 1rem auto;
+  }
+
+  .test-layout {
+    background: oklch(from var(--bg) calc(l - 0.1) c h);
+    padding: var(--padding);
+    padding: var(--s0);
+    border-radius: var(--radius);
+  }
+
+  .toaster-test {
+    min-inline-size: 10ch;
+    border: 1px solid;
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+    padding: var(--s-1);
+  }
+
+  #info-test {
+    color: var(--leptoaster-info-text-color);
+    background: var(--leptoaster-info-background-color);
+    border-color: var(--leptoaster-info-border-color);
+  }
+  #success-test {
+    color: var(--leptoaster-success-text-color);
+    background: var(--leptoaster-success-background-color);
+    border-color: var(--leptoaster-success-border-color);
+  }
+  #error-test {
+    color: var(--leptoaster-error-text-color);
+    background: var(--leptoaster-error-background-color);
+    border-color: var(--leptoaster-error-border-color);
   }
 
 }
