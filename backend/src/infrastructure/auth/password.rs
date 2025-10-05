@@ -1,4 +1,3 @@
-use crate::auth::domain::*;
 use argon2::{
     password_hash::{
         rand_core::OsRng, PasswordHash, PasswordHasher,
@@ -7,6 +6,8 @@ use argon2::{
     Algorithm, Argon2, Params, Version,
 };
 use std::sync::OnceLock;
+
+use crate::domain::auth_model::*;
 
 static ARGON2: OnceLock<Argon2<'static>> = OnceLock::new();
 

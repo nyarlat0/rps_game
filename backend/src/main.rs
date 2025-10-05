@@ -1,6 +1,3 @@
-use crate::auth::{application::*, infrastructure::*};
-use crate::game::{application::*, infrastructure::*};
-use crate::ws::*;
 use actix_files as fs;
 use actix_web::{web, App, HttpServer, Responder};
 use dotenvy::dotenv;
@@ -8,10 +5,14 @@ use sqlx::PgPool;
 use std::env;
 use std::sync::Arc;
 
-pub mod auth;
-pub mod forum;
-pub mod game;
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 pub mod ws;
+
+use crate::application::{auth_handler::*, ws_handler::*};
+use crate::infrastructure::{auth::*, game::*};
+use crate::ws::*;
 
 async fn fallback() -> impl Responder
 {

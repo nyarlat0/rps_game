@@ -1,4 +1,4 @@
-use crate::game::domain::*;
+use crate::domain::game_model::*;
 use shared::game::*;
 use std::sync::Arc;
 

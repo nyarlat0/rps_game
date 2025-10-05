@@ -1,4 +1,4 @@
-use crate::auth::domain::*;
+use crate::domain::auth_model::*;
 use shared::auth::{Credentials, UserInfo};
 use std::sync::Arc;
 use uuid::Uuid;

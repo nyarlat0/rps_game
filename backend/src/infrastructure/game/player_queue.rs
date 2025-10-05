@@ -1,7 +1,8 @@
-use crate::game::application::*;
-use crate::game::domain::{GameError, Player};
 use std::collections::VecDeque;
 use std::sync::Mutex;
+
+use crate::application::ws_handler::*;
+use crate::domain::game_model::{GameError, Player};
 
 #[derive(Default)]
 pub struct InMemoryPlayerQueue

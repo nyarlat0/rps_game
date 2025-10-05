@@ -1,7 +1,8 @@
-use crate::game::application::*;
-use crate::game::domain::*;
-use shared::game::*;
 use std::sync::Mutex;
+
+use crate::application::ws_handler::*;
+use crate::domain::game_model::*;
+use shared::game::*;
 
 #[derive(Default)]
 pub struct InMemoryGameRepo

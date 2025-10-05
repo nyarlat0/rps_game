@@ -1,10 +1,11 @@
-use crate::auth::domain::*;
-use crate::auth::infrastructure::*;
 use async_trait::async_trait;
 use shared::auth::Credentials;
 use shared::auth::UserInfo;
 use sqlx::postgres::PgPool;
 use uuid::Uuid;
+
+use crate::domain::auth_model::*;
+use crate::infrastructure::auth::*;
 
 pub struct PsqlAuthService
 {

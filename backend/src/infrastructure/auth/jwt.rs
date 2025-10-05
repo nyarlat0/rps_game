@@ -1,4 +1,3 @@
-use crate::auth::domain::*;
 use actix_web::HttpRequest;
 use chrono::{Duration, Utc};
 use dotenvy::dotenv;
@@ -9,6 +8,8 @@ use jsonwebtoken::{
 use std::env;
 use std::sync::OnceLock;
 use uuid::Uuid;
+
+use crate::domain::auth_model::*;
 
 static ENCODING_KEY: OnceLock<EncodingKey> =
     OnceLock::new();

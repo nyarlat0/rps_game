@@ -1,10 +1,11 @@
-use crate::auth::application::AuthHandler;
-use crate::auth::domain::AuthError;
-use crate::auth::infrastructure::extract_id;
 use actix_web::cookie::{time::Duration, Cookie, SameSite};
 use actix_web::{
     get, post, web, HttpRequest, HttpResponse, Responder,
 };
+
+use crate::application::auth_handler::*;
+use crate::domain::auth_model::AuthError;
+use crate::infrastructure::auth::extract_id;
 use shared::auth::*;
 
 pub fn configure_auth(cfg: &mut web::ServiceConfig)
