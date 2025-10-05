@@ -2,7 +2,12 @@
 @layer utilities {
   /* ───────────────── Stack ─────────────────
      Vertical flow with controllable rhythm (RTL/vertical-writing safe) */
-  /*:where(.stack) { display: block; }*/
+  .stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  :where(.stack > *) { display: block; }
   :where(.stack > * + *) {
     margin-block-start: var(--stack-gap, 1rem);
   }
@@ -96,8 +101,8 @@
     display: grid;
     gap: var(--grid-gap, 1rem);
     grid-template-columns: repeat(
-      auto-fill,
-      minmax(var(--grid-cell, 12rem), 1fr)
+      auto-fit,
+      minmax(var(--grid-cell, 5rem), 1fr)
     );
     grid-auto-flow: dense;
     align-items: start;
@@ -167,7 +172,7 @@
   :where(.ratio-16-9){ aspect-ratio: 16/9; }
 
   :where(.fill-page) {
-    min-inline-size: max(30ch, 30dvw);
+    min-inline-size: min(80dvw, 35ch);
   }
 }
 

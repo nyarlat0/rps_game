@@ -53,10 +53,16 @@
     text-align: center;
   }
 
-  input {
-    width: 100%;
+  input, hr {
     margin: 0;
+  }
+
+  input {
     text-decoration: none;
+  }
+  hr {
+    margin-inline: -1rem;
+    border-color: oklch(from var(--muted) l c h / 80%); 
   }
 
   input,
@@ -109,6 +115,11 @@
       0.11
       var(--hue)
       );
+    --brand-weak: oklch(
+      calc(var(--light) - 0.1)
+      0.11
+      var(--hue)
+      );
 
     --focus: oklch(from var(--brand) calc(l + 0.05) c h); /* variation 0.7 - 0.8 */
 
@@ -129,7 +140,7 @@
       0
       var(--hue)
       );
-    --muted: oklch(from var(--ink) calc(l - 0.05) c h);
+    --muted: oklch(from var(--ink) calc(l - 0.15) c h);
 
     --info: var(--bg);
     --success: oklch(
@@ -144,7 +155,9 @@
       0.18
       var(--hue)
       );
-    --mes-ink:white;
+    --mes-ink:oklch(calc(0.95 + var(--set-light)) 0 0);
+
+    --btn-color: var(--brand);
 
 
     accent-color: var(--brand);

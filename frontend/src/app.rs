@@ -28,10 +28,10 @@ pub fn App() -> impl IntoView
                 )
             }</style>
             <header class="site-header">
-            <NavBar set_visible_forum/>
+            <NavBar visible_forum set_visible_forum/>
             </header>
 
-            <main class="center cover-center">
+            <main class="cover-center">
                 <Routes fallback=|| "Not found.">
                     <Route path=path!("/") view=Home />
                     <Route path=path!("/register") view=Register />

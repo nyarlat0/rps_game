@@ -27,7 +27,10 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
                 prop:value=move || message.get()
                 on:input=move |ev| set_message.set(event_target_value(&ev))
                 />
-                <button on:click=on_submit>"Send"</button>
+            <div class="cluster" style="--cluster-justify: space-between;">
+            <button class="tetriary destructive">"Clear"</button>
+            <button on:click=on_submit style="width: 50%;">"Send"</button>
+            </div>
         </div>
     }
 }

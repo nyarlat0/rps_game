@@ -157,14 +157,13 @@
       transform: translateY(-100%);
     }
   }
-
+  
   button, .button {
     font: inherit;
     color: white;
-    display: block;
     font-weight: 700;
     text-decoration: none;
-    background: var(--brand);
+    background: var(--btn-color);
     border: none;
     border-radius: var(--radius);
     padding: var(--s-1);
@@ -172,19 +171,57 @@
     position: relative;
     overflow: hidden;
     z-index: 1;
+
     transition:
       background 0.3s,
-      box-shdow 0.3s;
-    &:hover{
-      background: var(--focus);
-      box-shadow: 0 0 var(--s0) oklch(from var(--focus) l c h / 50%);
+      box-shadow 0.3s;
+    &:hover {
+      background: oklch(from var(--btn-color) calc(l + 0.05) c h);
+      box-shadow: 0 0 var(--s2) oklch(from var(--btn-color) calc(l + 0.05) c h / 50%);
+    }
+
+    &.destructive {
+      --btn-color: var(--error);
+      &.tetriary {
+        color: var(--muted);
+      }
+    }
+    &.success {
+      --btn-color: var(--success)
+    }
+
+    &.secondary {
+      color: var(--btn-color);
+      background: transparent;
+      outline: var(--s-5) solid oklch(from var(--btn-color) l c h / 70%);
+
+      transition: color 0.3s, outline-color 0.3s;
+      &:hover {
+        color: oklch(from var(--btn-color) calc(l + 0.05) c h);
+        background: transparent;
+        outline-color: oklch(from var(--btn-color) calc(l + 0.05) c h / 70%);
+      }
+    }
+
+    &.tetriary {
+      color: var(--btn-color);
+      background: transparent;
+
+      transition: color 0.3s;
+      &:hover {
+        background: transparent;
+        box-shadow: none;
+        color: oklch(from var(--btn-color) calc(l + 0.05) c h);
+      }
     }
   }
   a.button {
-    display: block;
+    display: inline-block;
     text-decoration: none;
     text-align: center;
   }
+
+
 
   @keyframes spinner {
   0% { transform: rotate(0deg); }

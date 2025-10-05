@@ -17,6 +17,7 @@ pub fn Settings(light: Signal<i32>,
             </label>
             <div class="stack" style="--stack-gap: var(--s-2);">
             <input
+            style="padding: 0;"
             name="light" id="light" type="range"
             min="-5" max="5" step="1"
             prop:value=light
@@ -29,6 +30,7 @@ pub fn Settings(light: Signal<i32>,
             <label for="hue" style="font-weight: 700;">"Hue: +"{hue}"°"</label>
             <div class="stack" style="--stack-gap: var(--s-2);">
             <input
+            style="padding: 0;"
             name="hue" id="hue" type="range"
             min="0" max="70" step="1"
             prop:value=hue
@@ -38,7 +40,8 @@ pub fn Settings(light: Signal<i32>,
             />
             </div>
 
-            <div class="stack" style="--stack-gap: var(--s2)">
+            <div class="stack" style="--stack-gap: var(--s1)">
+            <hr />
             <div class="cluster test-layout" style="--cluster-justify: space-evenly;">
             <div class="toaster-test" id="info-test">"Info"</div>
             <div class="toaster-test" id="success-test">"Success"</div>

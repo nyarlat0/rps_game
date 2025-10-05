@@ -38,8 +38,8 @@ pub fn Login() -> impl IntoView
     };
 
     view! {
-        <form on:submit=on_submit class="card stack fill-page">
-            <h1 class="text-center">"Log In"</h1>
+        <form on:submit=on_submit class="stack fill-page card">
+            <h1>"Log In"</h1>
 
             <label for="username">"Username:"</label>
             <div class="stack" style="--stack-gap: var(--s-1)">

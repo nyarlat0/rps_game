@@ -6,7 +6,8 @@ use leptos_use::{
 };
 
 #[component]
-pub fn NavBar(set_visible_forum: WriteSignal<bool>)
+pub fn NavBar(visible_forum: ReadSignal<bool>,
+              set_visible_forum: WriteSignal<bool>)
               -> impl IntoView
 {
     let UseColorModeReturn { mode, set_mode, .. } =
@@ -70,6 +71,11 @@ pub fn NavBar(set_visible_forum: WriteSignal<bool>)
                 class="icon-btn"
                 title="Toggle forum"
                 aria-label="Toggle forum"
+                style=move || {
+                    if visible_forum.get() {
+                        "background: var(--brand-weak);"
+                    } else {""}
+                }
                 on:click=move |_| set_visible_forum.update(|value| *value = !*value)
             >
                 <svg class="icon" alt="Toggle forum">

@@ -36,12 +36,11 @@ pub fn Register() -> impl IntoView
     };
 
     view! {
-        <div class="v-center">
-        <form on:submit=on_submit class="card stack">
-            <h1 class="text-center">"Register"</h1>
+        <form on:submit=on_submit class="stack fill-page card">
+            <h1>"Register"</h1>
 
             <label for="username">"Username:"</label>
-            <div class="stack" style="--space: var(--s-1)">
+            <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="username"
                 type="text"
@@ -54,7 +53,7 @@ pub fn Register() -> impl IntoView
             />
             </div>
             <label for="password">"Password:"</label>
-            <div class="stack" style="--space: var(--s-1)">
+            <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="password"
                 type="password"
@@ -66,10 +65,11 @@ pub fn Register() -> impl IntoView
                 }
             />
             </div>
-            <div class="stack" style="--space: var(--s2)">
+            <div class="stack" style="--stack-gap: var(--s2)">
             <button type="submit">
                 "Register"
             </button>
+            </div>
 
             <div class="stack">
             <div class="grid">
@@ -81,8 +81,6 @@ pub fn Register() -> impl IntoView
             </a>
             </div>
             </div>
-            </div>
         </form>
-        </div>
     }
 }

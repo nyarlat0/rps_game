@@ -24,18 +24,19 @@ pub fn Home() -> impl IntoView
 pub fn AuthView(user_info: UserInfo) -> impl IntoView
 {
     view! {
-        <div class="card stack center">
+        <div class="stack fill-page card">
 
-        <h1 class="text-center">"Dashboard"</h1>
+        <h1>"Dashboard"</h1>
 
-        <h2 class="text-center">"Welcome, " {user_info.username} "!"</h2>
+        <h2>"Welcome, " {user_info.username} "!"</h2>
+        <p style="color: var(--success);">"Users online: "{}</p>
 
         <a href = "/game" class="button">
             "Play"
         </a>
 
         <form method="POST" action="/api/auth/logout" class="stack">
-            <button type="submit">"Logout"</button>
+            <button type="submit" class="secondary destructive">"Logout"</button>
         </form>
 
         </div>
@@ -46,7 +47,7 @@ pub fn AuthView(user_info: UserInfo) -> impl IntoView
 pub fn UnAuthView() -> impl IntoView
 {
     view! {
-        <div class="center stack card">
+        <div class="stack fill-page card">
 
         <h1>"Dashboard"</h1>
 
