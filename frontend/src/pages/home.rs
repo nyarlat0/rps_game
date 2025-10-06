@@ -1,6 +1,10 @@
-use crate::api::fetch_user_info;
 use leptos::prelude::*;
+use serde_json::json;
 use shared::auth::UserInfo;
+use shared::ws_messages::ClientMsg;
+
+use crate::api::fetch_user_info;
+use crate::hooks::WebsocketContext;
 
 #[component]
 pub fn Home() -> impl IntoView
@@ -8,7 +12,6 @@ pub fn Home() -> impl IntoView
     let info =
         LocalResource::new(move || fetch_user_info());
     view! {
-        //<div class="cover center">
             {
                 move || match info.get() {
                     Some(Some(user_info)) => view! {<AuthView user_info />}.into_any(),
@@ -16,20 +19,22 @@ pub fn Home() -> impl IntoView
                     None => view! {<div class="loading-spinner"></div>}.into_any(),
                 }
             }
-        //</div>
     }
 }
 
 #[component]
 pub fn AuthView(user_info: UserInfo) -> impl IntoView
 {
+    let ws = expect_context::<WebsocketContext>();
+    ws.send(&json!(ClientMsg::GetStats).to_string());
+
     view! {
         <div class="stack fill-page card">
 
         <h1>"Dashboard"</h1>
 
         <h2>"Welcome, " {user_info.username} "!"</h2>
-        <p style="color: var(--success);">"Users online: "{}</p>
+        <p style="color: var(--success);">"Users online: "{ws.message}</p>
 
         <a href = "/game" class="button">
             "Play"

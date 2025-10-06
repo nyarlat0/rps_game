@@ -1,11 +1,16 @@
-use crate::components::*;
-use crate::pages::*;
-use codee::string::FromToStringCodec;
+use codee::string::{FromToStringCodec, JsonSerdeCodec};
 use leptoaster::*;
 use leptos::prelude::*;
 use leptos_router::components::*;
 use leptos_router::path;
-use leptos_use::storage::*;
+use leptos_use::{
+    storage::*, use_websocket, UseWebSocketReturn,
+};
+use std::sync::Arc;
+
+use crate::components::*;
+use crate::hooks::WebsocketContext;
+use crate::pages::*;
 
 #[component]
 pub fn App() -> impl IntoView
@@ -16,6 +21,13 @@ pub fn App() -> impl IntoView
     let (light, set_light, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
     let (hue, set_hue, _) =
         use_local_storage::<i32, FromToStringCodec>("hue");
+
+    let UseWebSocketReturn {
+        message,
+        send,
+        ..
+    } = use_websocket::<String,String, JsonSerdeCodec>("/api/ws");
+    provide_context(WebsocketContext::new(message, Arc::new(send.clone())));
 
     view! {
         <Toaster />

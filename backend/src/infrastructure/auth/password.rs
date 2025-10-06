@@ -14,7 +14,7 @@ static ARGON2: OnceLock<Argon2<'static>> = OnceLock::new();
 fn argon2() -> &'static Argon2<'static>
 {
     ARGON2.get_or_init(|| {
-              let params = Params::new(124 * 1024,
+              let params = Params::new(124 * 512,
                                        3,
                                        1,
                                        None).unwrap();

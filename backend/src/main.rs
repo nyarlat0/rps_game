@@ -1,3 +1,4 @@
+use actix::Actor;
 use actix_files as fs;
 use actix_web::{web, App, HttpServer, Responder};
 use dotenvy::dotenv;
@@ -43,10 +44,14 @@ async fn main() -> std::io::Result<()>
                               player_qu };
     let shared_handler = web::Data::new(handler);
 
+    let stats_actor = SiteStats::new().start();
+    let shared_stats = web::Data::new(stats_actor);
+
     HttpServer::new(move || {
         App::new()
             .app_data(auth_handler.clone())
             .app_data(shared_handler.clone())
+            .app_data(shared_stats.clone())
             .service(web::scope("/api/auth").configure(configure_auth))
             .service(web::scope("/api/game").configure(configure_game))
             .service(web::scope("/api").configure(configure_ws))
