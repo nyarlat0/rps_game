@@ -1,26 +1,32 @@
 use leptos::prelude::*;
+use leptos_use::core::ConnectionReadyState;
+use shared::ws_messages::*;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct WebsocketContext
 {
-    pub message: Signal<Option<String>>,
-    send: Arc<dyn Fn(&String) + Send + Sync>,
+    pub state: Signal<ConnectionReadyState>,
+    pub message: Signal<Option<ServerMsg>>,
+    send: Arc<dyn Fn(&ClientMsg) + Send + Sync>,
 }
 
 impl WebsocketContext
 {
-    pub fn new(message: Signal<Option<String>>,
-               send: Arc<dyn Fn(&String) + Send + Sync>)
+    pub fn new(state: Signal<ConnectionReadyState>,
+               message: Signal<Option<ServerMsg>>,
+               send: Arc<dyn Fn(&ClientMsg) + Send + Sync>)
                -> Self
     {
-        Self { message, send }
+        Self { state,
+               message,
+               send }
     }
 
     // create a method to avoid having to use parantheses around the field
     #[inline(always)]
-    pub fn send(&self, message: &str)
+    pub fn send(&self, message: ClientMsg)
     {
-        (self.send)(&message.to_string())
+        (self.send)(&message)
     }
 }

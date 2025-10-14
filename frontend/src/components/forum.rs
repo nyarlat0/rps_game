@@ -1,9 +1,25 @@
 use leptos::prelude::*;
 
+use crate::hooks::WebsocketContext;
+
 #[component]
 pub fn Forum(visible_forum: ReadSignal<bool>)
              -> impl IntoView
 {
+    let ws = {
+        match use_context::<WebsocketContext>() {
+            Some(ws) => ws,
+            None => return view! {
+                <div
+                    class="card stack forum"
+                    class:active=move || visible_forum.get()
+                >
+                    "Log in to see forum!"
+                </div>
+            }.into_any(),
+        }
+    };
+
     let (message, set_message) = signal(String::new());
 
     let on_submit = move |_| {
@@ -32,5 +48,5 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
             <button on:click=on_submit style="width: 50%;">"Send"</button>
             </div>
         </div>
-    }
+    }.into_any()
 }

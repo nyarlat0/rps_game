@@ -1,13 +1,47 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+use crate::forum::ForumPost;
+
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ClientMsg
 {
     GetStats,
+    ForumMsg(ForumCmd),
 }
 
-#[derive(Serialize, Deserialize)]
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Clone)]
+pub enum ServerMsg
+{
+    StatsMsg(StatsInfo),
+    Error(WsError),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct StatsInfo
 {
     pub online: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum ForumCmd
+{
+    MakePost(String),
+    LikePost
+    {
+        id: u32,
+    },
+    DislikePost
+    {
+        id: u32,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum WsError
+{
+    MsgError,
+    UnAuth,
+    DataError,
 }

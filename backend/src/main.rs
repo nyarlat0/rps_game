@@ -44,14 +44,14 @@ async fn main() -> std::io::Result<()>
                               player_qu };
     let shared_handler = web::Data::new(handler);
 
-    let stats_actor = SiteStats::new().start();
-    let shared_stats = web::Data::new(stats_actor);
+    let users_actor = UsersActor::new().start();
+    let shared_users_actor = web::Data::new(users_actor);
 
     HttpServer::new(move || {
         App::new()
             .app_data(auth_handler.clone())
             .app_data(shared_handler.clone())
-            .app_data(shared_stats.clone())
+            .app_data(shared_users_actor.clone())
             .service(web::scope("/api/auth").configure(configure_auth))
             .service(web::scope("/api/game").configure(configure_game))
             .service(web::scope("/api").configure(configure_ws))

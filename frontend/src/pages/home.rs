@@ -1,32 +1,53 @@
-use leptos::prelude::*;
-use serde_json::json;
-use shared::auth::UserInfo;
-use shared::ws_messages::ClientMsg;
+use std::time::Duration;
 
-use crate::api::fetch_user_info;
+use leptos::logging::log;
+use leptos::prelude::*;
+
+use leptos_use::core::ConnectionReadyState;
+use leptos_use::use_interval_fn;
+use shared::auth::UserInfo;
+use shared::ws_messages::*;
+
 use crate::hooks::WebsocketContext;
 
 #[component]
-pub fn Home() -> impl IntoView
-{
-    let info =
-        LocalResource::new(move || fetch_user_info());
-    view! {
-            {
-                move || match info.get() {
-                    Some(Some(user_info)) => view! {<AuthView user_info />}.into_any(),
-                    Some(None) => view! {<UnAuthView />}.into_any(),
-                    None => view! {<div class="loading-spinner"></div>}.into_any(),
-                }
-            }
-    }
-}
-
-#[component]
-pub fn AuthView(user_info: UserInfo) -> impl IntoView
+pub fn AuthHome() -> impl IntoView
 {
     let ws = expect_context::<WebsocketContext>();
-    ws.send(&json!(ClientMsg::GetStats).to_string());
+    let user_info = expect_context::<UserInfo>();
+    let (online_count, set_online_count) = signal::<u32>(0);
+
+    Effect::new(move |_| {
+        if let Some(msg) = ws.message.get() {
+            match msg {
+                ServerMsg::StatsMsg(stats_info) => {
+                    set_online_count.set(stats_info.online);
+                }
+                _ => {
+                    log!("Unknown ServerMsg")
+                }
+            }
+        };
+    });
+
+    Effect::new({
+        let ws = ws.clone();
+        move |_| {
+            if ws.state.get() == ConnectionReadyState::Open
+            {
+                ws.send(ClientMsg::GetStats);
+            }
+        }
+    });
+
+    use_interval_fn(move || {
+                        if ws.state.get()
+                           == ConnectionReadyState::Open
+                        {
+                            ws.send(ClientMsg::GetStats);
+                        }
+                    },
+                    10_000);
 
     view! {
         <div class="stack fill-page card">
@@ -34,7 +55,7 @@ pub fn AuthView(user_info: UserInfo) -> impl IntoView
         <h1>"Dashboard"</h1>
 
         <h2>"Welcome, " {user_info.username} "!"</h2>
-        <p style="color: var(--success);">"Users online: "{ws.message}</p>
+        <p style="color: var(--success);">"Users online: "{move || online_count.get()}</p>
 
         <a href = "/game" class="button">
             "Play"
@@ -49,12 +70,12 @@ pub fn AuthView(user_info: UserInfo) -> impl IntoView
 }
 
 #[component]
-pub fn UnAuthView() -> impl IntoView
+pub fn UnAuthHome() -> impl IntoView
 {
     view! {
         <div class="stack fill-page card">
 
-        <h1>"Dashboard"</h1>
+        <h1>"Welcome!"</h1>
 
         <h2>"Please log in or register"</h2>
 

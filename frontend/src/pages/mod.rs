@@ -1,10 +1,8 @@
 mod game;
 mod home;
 mod login;
-mod mmmvpn;
 mod register;
 pub use game::Game;
-pub use home::Home;
+pub use home::{AuthHome, UnAuthHome};
 pub use login::Login;
-pub use mmmvpn::MMMVPN;
 pub use register::Register;

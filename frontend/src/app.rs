@@ -6,8 +6,10 @@ use leptos_router::path;
 use leptos_use::{
     storage::*, use_websocket, UseWebSocketReturn,
 };
+use shared::{auth::UserInfo, ws_messages::*};
 use std::sync::Arc;
 
+use crate::api::fetch_user_info;
 use crate::components::*;
 use crate::hooks::WebsocketContext;
 use crate::pages::*;
@@ -21,13 +23,9 @@ pub fn App() -> impl IntoView
     let (light, set_light, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
     let (hue, set_hue, _) =
         use_local_storage::<i32, FromToStringCodec>("hue");
-
-    let UseWebSocketReturn {
-        message,
-        send,
-        ..
-    } = use_websocket::<String,String, JsonSerdeCodec>("/api/ws");
-    provide_context(WebsocketContext::new(message, Arc::new(send.clone())));
+    let info =
+        LocalResource::new(move || fetch_user_info());
+    provide_context(info);
 
     view! {
         <Toaster />
@@ -43,15 +41,24 @@ pub fn App() -> impl IntoView
             <NavBar visible_forum set_visible_forum/>
             </header>
 
-            <main class="cover-center">
-                <Routes fallback=|| "Not found.">
-                    <Route path=path!("/") view=Home />
-                    <Route path=path!("/register") view=Register />
-                    <Route path=path!("/login") view=Login />
-                    <Route path=path!("/game") view=Game />
-                    <Route path=path!("/mmmvpn") view=MMMVPN />
-                </Routes>
-            </main>
+            {
+                move || match info.get() {
+                    // loading user info
+                    None => view! {
+                        <main class="cover-center">
+                            <div class="loading-spinner"></div>
+                        </main>
+                    }.into_any(),
+
+                    // user unauthenticated
+                    Some(None) => view!{<UnAuthView visible_forum />}.into_any(),
+
+                    // user authenticated
+                    Some(Some(user_info)) => view!{<AuthView visible_forum user_info />}.into_any(),
+                }
+            }
+
+
             <footer class="site-footer">
                 <nav
                     aria-label="Footer"
@@ -64,8 +71,53 @@ pub fn App() -> impl IntoView
                 </nav>
             </footer>
 
-            <Forum visible_forum />
             <Settings light set_light hue set_hue/>
         </Router>
+    }
+}
+
+#[component]
+fn UnAuthView(visible_forum: ReadSignal<bool>)
+              -> impl IntoView
+{
+    view! {
+        <main class="cover-center">
+        <Routes fallback=|| "Not found.">
+            <Route path=path!("/login") view=Login />
+            <Route path=path!("/register") view=Register />
+            <Route path=path!("/*any") view=UnAuthHome />
+        </Routes>
+        </main>
+
+        <Forum visible_forum />
+    }
+}
+
+#[component]
+fn AuthView(visible_forum: ReadSignal<bool>,
+            user_info: UserInfo)
+            -> impl IntoView
+{
+    let UseWebSocketReturn {
+        ready_state,
+        message,
+        send,
+        ..
+    } = use_websocket::<ClientMsg, ServerMsg, JsonSerdeCodec>("/api/ws");
+
+    provide_context(WebsocketContext::new(ready_state, message, Arc::new(send.clone())));
+    provide_context(user_info);
+
+    view! {
+        <main class="cover-center">
+        <Routes fallback=|| "Not found.">
+            <Route path=path!("/") view=AuthHome/>
+            <Route path=path!("/login") view=|| {view! {<Redirect path="/" />}} />
+            <Route path=path!("/register") view=|| {view! {<Redirect path="/" />}} />
+            <Route path=path!("/game") view=Game />
+        </Routes>
+        </main>
+
+        <Forum visible_forum />
     }
 }

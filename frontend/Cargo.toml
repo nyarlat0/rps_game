@@ -12,7 +12,6 @@ leptos_router = "0.8.5"
 leptoaster = "0.2.3"
 leptos-use = "0.16.2"
 gloo-net = "0.6.0"
-gloo-timers = {version = "0.3.0", features = ["futures"]}
 js-sys = "0.3.77"
 web-sys = "0.3.77"
 codee = "0.3.2"
