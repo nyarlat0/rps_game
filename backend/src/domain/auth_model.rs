@@ -19,7 +19,8 @@ impl From<User> for UserInfo
 {
     fn from(user: User) -> Self
     {
-        Self { username: user.name }
+        Self { username: user.name,
+               created_at: user.created_at }
     }
 }
 

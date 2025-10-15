@@ -11,6 +11,9 @@
   :where(.stack > * + *) {
     margin-block-start: var(--stack-gap, 1rem);
   }
+  .stack > h1 + * {
+    margin-block-start: 0;
+  }
 
   /* ───────────────── Cluster ───────────────
      Inline grouping with wrapping, gap, alignment */

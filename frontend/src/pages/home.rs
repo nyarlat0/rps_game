@@ -1,8 +1,7 @@
-use std::time::Duration;
-
 use leptos::logging::log;
 use leptos::prelude::*;
 
+use chrono::Local;
 use leptos_use::core::ConnectionReadyState;
 use leptos_use::use_interval_fn;
 use shared::auth::UserInfo;
@@ -55,9 +54,14 @@ pub fn AuthHome() -> impl IntoView
         <h1>"Dashboard"</h1>
 
         <h2>"Welcome, " {user_info.username} "!"</h2>
-        <p style="color: var(--success);">"Users online: "{move || online_count.get()}</p>
+        <p style="color: var(--success);">"Users online: "{online_count}</p>
+        <p>"Account created at: "{
+            user_info.created_at
+                .with_timezone(&Local)
+                .format("%d.%m.%Y %H:%M").to_string()
+        }</p>
 
-        <a href = "/game" class="button">
+        <a href = "/game" class="button" style ="margin-block-start: var(--s1);">
             "Play"
         </a>
 

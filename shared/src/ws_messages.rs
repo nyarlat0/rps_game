@@ -15,6 +15,12 @@ pub enum ClientMsg
 pub enum ServerMsg
 {
     StatsMsg(StatsInfo),
+    PostMsg
+    {
+        post: ForumPost,
+        liked: bool,
+        disliked: bool,
+    },
     Error(WsError),
 }
 

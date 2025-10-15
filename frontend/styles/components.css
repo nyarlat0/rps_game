@@ -177,7 +177,7 @@
       box-shadow 0.3s;
     &:hover {
       background: oklch(from var(--btn-color) calc(l + 0.05) c h);
-      box-shadow: 0 0 var(--s2) oklch(from var(--btn-color) calc(l + 0.05) c h / 50%);
+      box-shadow: 0 0 var(--s1) oklch(from var(--btn-color) calc(l + 0.05) c h / 50%);
     }
 
     &.destructive {

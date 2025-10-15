@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 serde = {workspace = true}
 serde_json = {workspace = true}
+chrono = {workspace = true}
 
 leptos = {version = "0.8.6", features = ["csr"]}
 leptos_router = "0.8.5"
