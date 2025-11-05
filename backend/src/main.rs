@@ -11,9 +11,12 @@ pub mod domain;
 pub mod infrastructure;
 pub mod ws;
 
-use crate::application::{auth_handler::*, ws_handler::*};
-use crate::infrastructure::{auth::*, game::*};
-use crate::ws::*;
+use crate::application::{
+    auth_handler::*, forum_handler::*, ws_handler::*,
+};
+use crate::domain::users_actor::UsersActor;
+use crate::infrastructure::{auth::*, forum::*, game::*};
+use crate::ws::ws_route;
 
 async fn fallback() -> impl Responder
 {
@@ -38,6 +41,11 @@ async fn main() -> std::io::Result<()>
     let auth_handler =
         web::Data::new(AuthHandler { auth_service });
 
+    let forum_service =
+        Arc::new(PsqlForumService { db: pool.clone() });
+    let forum_handler =
+        web::Data::new(ForumHandler { forum_service });
+
     let game_rep = Arc::new(InMemoryGameRepo::new());
     let player_qu = Arc::new(InMemoryPlayerQueue::new());
     let handler = WsHandler { game_rep,
@@ -51,10 +59,15 @@ async fn main() -> std::io::Result<()>
         App::new()
             .app_data(auth_handler.clone())
             .app_data(shared_handler.clone())
+            .app_data(forum_handler.clone())
             .app_data(shared_users_actor.clone())
-            .service(web::scope("/api/auth").configure(configure_auth))
-            .service(web::scope("/api/game").configure(configure_game))
-            .service(web::scope("/api").configure(configure_ws))
+            .service(
+                web::scope("/api")
+                .configure(configure_auth)
+                .configure(configure_game)
+                .service(ws_route)
+                .service(forum_control)
+            )
             .service(fs::Files::new("/", "./frontend/dist").index_file("index.html"))
             .default_service(web::get().to(fallback))
     })

@@ -113,7 +113,7 @@
 
     &:hover {
       box-shadow: none;
-      background: oklch(from var(--surface) calc(l + 0.05) c h / 50%);
+      background: oklch(from var(--hover-color, var(--surface)) calc(l + 0.05) c h / 50%);
 
     }
     &:focus-visible {
@@ -133,6 +133,9 @@
     right: var(--s-2);
     z-index: 20;
     max-width: 30ch;
+    max-height: 80dvh;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
     box-shadow: var(--shadow-high);
     pointer-events: none;
 
@@ -156,6 +159,19 @@
       opacity: 0;
       transform: translateY(-100%);
     }
+  }
+
+  .post-contents {
+    --frame: 0.5rem;
+    margin-inline: calc(var(--frame)* -1);
+    border-radius: var(--s-1);
+    background: oklch(from var(--surface) calc(l + 0.05) c h);
+    padding: calc(var(--frame) / var(--ratio)) var(--frame);
+  }
+
+  .forum-reaction {
+    inline-size: 1rem;
+    block-size: 1rem;
   }
   
   button, .button {

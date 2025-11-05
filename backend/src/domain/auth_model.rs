@@ -36,6 +36,9 @@ pub trait AuthService: Send + Sync
     async fn get_userinfo(&self,
                           id: Uuid)
                           -> Result<UserInfo, AuthError>;
+    async fn get_user(&self,
+                      id: Uuid)
+                      -> Result<User, AuthError>;
 }
 
 pub enum AuthError

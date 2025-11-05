@@ -92,6 +92,10 @@
     }
   }
 
+  textarea {
+    min-height: 7cap;
+  }
+
   label {
     display: block;
   }
@@ -141,6 +145,7 @@
       );
 
     --surface: oklch(calc(var(--set-light) + 0.95) 0 var(--cold-hue)); /* 0.9 - 1.0 */
+    --surface-high: oklch(from var(--surface) calc(l + 0.05) c h);
     --surface-deep: oklch(from var(--surface) calc(l - 0.05) c h);
     --border: oklch(from var(--surface) calc(l - 0.1) c h);
 

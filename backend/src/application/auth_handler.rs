@@ -31,4 +31,11 @@ impl AuthHandler
     {
         self.auth_service.get_userinfo(id).await
     }
+
+    pub async fn get_user(&self,
+                          id: Uuid)
+                          -> Result<User, AuthError>
+    {
+        self.auth_service.get_user(id).await
+    }
 }

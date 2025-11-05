@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use actix::prelude::*;
 use actix_web::{
     get, rt, web, HttpRequest, HttpResponse, Responder,
@@ -7,114 +5,14 @@ use actix_web::{
 use actix_ws::AggregatedMessage;
 use futures_util::StreamExt;
 use shared::ws_messages::*;
-use slab::Slab;
-use tokio::sync::mpsc::{self, UnboundedSender};
+use tokio::sync::mpsc;
 use tokio::time::{
     interval, Duration, Instant, MissedTickBehavior,
 };
-use uuid::Uuid;
 
 use crate::application::auth_handler::AuthHandler;
+use crate::domain::users_actor::*;
 use crate::infrastructure::auth::extract_id;
-
-#[derive(Clone, Default)]
-pub struct UsersActor
-{
-    users_online:
-        HashMap<Uuid, Slab<UnboundedSender<ServerMsg>>>,
-}
-
-impl UsersActor
-{
-    pub fn new() -> Self
-    {
-        Self::default()
-    }
-}
-
-impl Actor for UsersActor
-{
-    type Context = Context<Self>;
-}
-
-#[derive(Message)]
-#[rtype(result = "usize")]
-struct Joined
-{
-    tx: UnboundedSender<ServerMsg>,
-    user_id: Uuid,
-}
-
-#[derive(Message)]
-#[rtype(result = "()")]
-struct Disconnected
-{
-    user_id: Uuid,
-    conn_id: usize,
-}
-
-impl Handler<Joined> for UsersActor
-{
-    type Result = usize;
-    fn handle(&mut self,
-              msg: Joined,
-              _ctx: &mut Self::Context)
-              -> Self::Result
-    {
-        if self.users_online.contains_key(&msg.user_id) {
-            let conns = self.users_online
-                            .get_mut(&msg.user_id)
-                            .unwrap();
-            let conn_id = conns.insert(msg.tx);
-            return conn_id;
-        } else {
-            let mut conns = Slab::new();
-            let conn_id = conns.insert(msg.tx);
-            self.users_online.insert(msg.user_id, conns);
-            return conn_id;
-        }
-    }
-}
-
-impl Handler<Disconnected> for UsersActor
-{
-    type Result = ();
-    fn handle(&mut self,
-              msg: Disconnected,
-              _ctx: &mut Self::Context)
-              -> Self::Result
-    {
-        let conns = self.users_online
-                        .get_mut(&msg.user_id)
-                        .unwrap();
-        conns.remove(msg.conn_id);
-
-        if conns.is_empty() {
-            self.users_online.remove(&msg.user_id);
-        };
-    }
-}
-
-#[derive(Message)]
-#[rtype(result = "usize")]
-struct GetOnline;
-
-impl Handler<GetOnline> for UsersActor
-{
-    type Result = usize;
-    fn handle(&mut self,
-              _msg: GetOnline,
-              _ctx: &mut Self::Context)
-              -> Self::Result
-    {
-        self.users_online.len()
-    }
-}
-
-pub fn configure_ws(cfg: &mut web::ServiceConfig)
-{
-    cfg.service(ws_route);
-}
 
 #[get("/ws")]
 pub async fn ws_route(

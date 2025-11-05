@@ -10,16 +10,16 @@ use shared::auth::*;
 
 pub fn configure_auth(cfg: &mut web::ServiceConfig)
 {
-    cfg.service(register)
-       .service(login)
-       .service(logout)
-       .service(whoami);
+    cfg.service(web::scope("/auth").service(register)
+                                   .service(login)
+                                   .service(logout)
+                                   .service(whoami));
 }
 
 #[post("/register")]
-pub async fn register(handler: web::Data<AuthHandler>,
-                      form: web::Json<Credentials>)
-                      -> impl Responder
+async fn register(handler: web::Data<AuthHandler>,
+                  form: web::Json<Credentials>)
+                  -> impl Responder
 {
     match handler.register_user(form.into_inner()).await {
         Ok(_) => HttpResponse::Ok()
@@ -34,9 +34,9 @@ pub async fn register(handler: web::Data<AuthHandler>,
 }
 
 #[post("/login")]
-pub async fn login(handler: web::Data<AuthHandler>,
-                   creds: web::Json<Credentials>)
-                   -> impl Responder
+async fn login(handler: web::Data<AuthHandler>,
+               creds: web::Json<Credentials>)
+               -> impl Responder
 {
     match handler.login_user(creds.into_inner()).await {
         Ok(token) => {
@@ -66,7 +66,7 @@ pub async fn login(handler: web::Data<AuthHandler>,
 }
 
 #[post("/logout")]
-pub async fn logout() -> impl Responder
+async fn logout() -> impl Responder
 {
     let expired = Cookie::build("auth_token", "")
         .path("/")
@@ -83,9 +83,9 @@ pub async fn logout() -> impl Responder
 }
 
 #[get("/me")]
-pub async fn whoami(handler: web::Data<AuthHandler>,
-                    req: HttpRequest)
-                    -> impl Responder
+async fn whoami(handler: web::Data<AuthHandler>,
+                req: HttpRequest)
+                -> impl Responder
 {
     if let Some(id) = extract_id(&req) {
         match handler.get_userinfo(id).await {

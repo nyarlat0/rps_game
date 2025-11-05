@@ -68,4 +68,21 @@ impl AuthService for PsqlAuthService
             user.ok_or(AuthError::InvalidCredentials)?;
         Ok(user.into())
     }
+
+    async fn get_user(&self,
+                      id: Uuid)
+                      -> Result<User, AuthError>
+    {
+        let user = sqlx::query_as!(
+            User,
+            "SELECT * FROM users WHERE id = $1",
+            id
+        ).fetch_optional(&self.db)
+                   .await
+                   .map_err(|_| AuthError::DatabaseError)?;
+
+        let user =
+            user.ok_or(AuthError::InvalidCredentials)?;
+        Ok(user)
+    }
 }
