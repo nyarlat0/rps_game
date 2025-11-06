@@ -12,6 +12,19 @@ pub async fn fetch_posts() -> Option<Vec<UserForumPost>>
     return result.ok();
 }
 
+pub async fn fetch_posts_by(start_id: i64,
+                            end_id: i64)
+                            -> Option<Vec<UserForumPost>>
+{
+    let response =
+        send_forum_cmd(ForumCmd::FetchPostsBy { start_id, end_id }).await?;
+    let result = response.json::<Result<Vec<UserForumPost>,
+                                ForumError>>()
+                         .await
+                         .ok()?;
+    return result.ok();
+}
+
 pub async fn create_post(msg: String)
                          -> Result<ForumPost, ForumError>
 {

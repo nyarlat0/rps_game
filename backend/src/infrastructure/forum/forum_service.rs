@@ -121,17 +121,18 @@ impl ForumService for PsqlForumService
         JOIN users u ON u.id = p.author_id
         LEFT JOIN post_reactions pr
           ON pr.post_id = p.id AND pr.user_id = $1
-        ORDER BY p.id ASC
-        LIMIT 50
+        ORDER BY p.id DESC
+        LIMIT 25
         "#,
                                 user_id
         ).fetch_all(&self.db)
                    .await
                    .map_err(|_| ForumError::DbError)?;
 
-        let out = rows.into_iter()
-                      .map(|r| {
-                          UserForumPost {
+        let mut out: Vec<UserForumPost> =
+            rows.into_iter()
+                .map(|r| {
+                    UserForumPost {
                     post: ForumPost {
                         id: r.id,
                         created_at: r.created_at, // timestamptz -> DateTime<Utc>
@@ -143,11 +144,13 @@ impl ForumService for PsqlForumService
                     liked: r.liked,
                     disliked: r.disliked,
                 }
-                      })
-                      .collect();
+                })
+                .collect::<Vec<UserForumPost>>();
+        out.reverse();
 
         Ok(out)
     }
+
     async fn fetch_posts_by(
         &self,
         user_id: Uuid,

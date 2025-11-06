@@ -9,8 +9,8 @@ use shared::{
 
 use crate::{
     api::{
-        create_post, dislike_post, fetch_posts, like_post,
-        undo_reaction,
+        create_post, dislike_post, fetch_posts,
+        fetch_posts_by, like_post, undo_reaction,
     },
     hooks::{MyToaster, WebsocketContext},
 };
@@ -42,7 +42,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
 
     let on_submit = {
         let toaster = toaster.clone();
-        move |_| {
+        move || {
             let msg = message.get().trim().to_string();
             if !msg.is_empty() {
                 let toaster = toaster.clone();
@@ -62,8 +62,104 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
     };
 
     let forum_elem = NodeRef::<Div>::new();
-    let UseScrollReturn { set_y, .. } =
+    let UseScrollReturn { y, set_y, .. } =
         use_scroll(forum_elem);
+    let (scrolled_once, set_scrolled_once) = signal(false);
+
+    let (posts_sig, set_posts_sig) =
+        signal(Vec::<UserForumPost>::new());
+
+    // fill fetched posts in the signal and scroll to the bottom
+    Effect::new(move |_| {
+        if let Some(Some(posts)) = forum_res.get() {
+            set_posts_sig.set(posts);
+        }
+    });
+
+    // scroll to buttom when posts update
+    Effect::new({
+        let set_y = set_y.clone();
+
+        move |_| {
+            let has_posts =
+                posts_sig.with(|v| !v.is_empty());
+            let already = scrolled_once.get();
+
+            if has_posts && !already {
+                if let Some(el) = forum_elem.get() {
+                    let bottom = el.scroll_height() as f64;
+                    set_y(bottom);
+                    set_scrolled_once.set(true);
+                }
+            }
+
+            let y_coord = y.get_untracked();
+            if already {
+                if let Some(el) = forum_elem.get() {
+                    let bottom = (el.scroll_height()
+                                  - el.client_height())
+                                 as f64;
+
+                    if (bottom - y_coord)
+                       <= (5.0 * (bottom / 26.0))
+                    {
+                        set_y(bottom);
+                    }
+                }
+            }
+        }
+    });
+
+    // fetch more on scroll up
+    Effect::new({
+        let toaster = toaster.clone();
+        move |_| {
+            let y_coord = y.get();
+            if let Some(UserForumPost { post, .. }) =
+                posts_sig.with(|v| v.first().cloned())
+            {
+                if visible_forum.get()
+                   && y_coord <= 64.0
+                   && post.id != 1
+                {
+                    let post_id = post.id;
+                    let toaster = toaster.clone();
+
+                    spawn_local(async move {
+                        let end_id = post_id - 1;
+                        let start_id = (end_id - 25).max(1);
+
+                        match fetch_posts_by(start_id, end_id).await {
+                        Some(prev_posts) => {
+                            set_posts_sig.update(move |posts| {
+                                posts.splice(0..0, prev_posts);
+                            });
+                        }
+                        None => {
+                            toaster.error("Could not load old posts.")
+                        }
+                    }
+                    });
+                }
+            }
+        }
+    });
+
+    // listen to new posts
+    Effect::new(move |_| {
+        if let Some(msg) = ws.message.get() {
+            match msg {
+                ServerMsg::NewPostMsg(post) => {
+                    set_posts_sig.update(move |posts| posts.push(
+                            UserForumPost{
+                                post, liked: false, disliked: false
+                            }
+                    ));
+                }
+                _ => {}
+            }
+        };
+    });
 
     view! {
         <div
@@ -72,240 +168,181 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
             node_ref=forum_elem
         >
             <h3>"Forum"</h3>
-            {
-                move || match forum_res.get() {
-                    Some(Some(posts)) => {
-                        let on_submit = on_submit.clone();
-                        let toaster = toaster.clone();
-
-                        let (posts_sig, set_posts_sig) = signal(posts);
-
-                        // scroll to buttom when posts update
-                        Effect::new({
-                            let set_y = set_y.clone();
-
-                            move |_| {
-                                let _ = posts_sig.get();
-
-                                if let Some(el) = forum_elem.get() {
-                                    let bottom = el.scroll_height() as f64;
-                                    set_y(bottom);
-                                }
-                            }
-                        });
-
-                        Effect::new(move |_| {
-                            if let Some(msg) = ws.message.get() {
-                                match msg {
-                                    ServerMsg::NewPostMsg(post) => {
-                                        set_posts_sig.update(move |posts| posts.push(
-                                                UserForumPost{
-                                                    post, liked: false, disliked: false
-                                                }
-                                        ));
-                                    }
-                                    _ => {}
-                                }
-                            };
-                        });
-
-                        view! {
-                            <hr />
-                            <For
-                                each=move || posts_sig.get()
-                                key=|upost| upost.post.id
-                                children=move |upost| {
-                                    let (like, set_like) = signal(upost.liked);
-                                    let (dislike, set_dislike) = signal(upost.disliked);
-
-                                    let post = upost.post;
-                                    let (like_counter, set_like_counter) = signal(post.likes);
-                                    let (dislike_counter, set_dislike_counter) = signal(post.dislikes);
-
-                                    let post_id = post.id;
-
-                                    let (first_run, set_first_run) = signal(true);
-
-                                    Effect::new({
-                                        let toaster = toaster.clone();
-
-                                        move || {
-                                            let toaster = toaster.clone();
-
-                                            if first_run.get(){
-                                                set_first_run.set(false);
-                                                return;
-                                            }
-
-                                            if like.get(){
-                                                spawn_local(async move {
-                                                    match like_post(post_id).await {
-                                                        Ok(_) => {},
-                                                        Err(err) => {
-                                                            toaster.error(&format!("{:?}", err))
-                                                        }
-                                                    }
-                                                });
-                                            } else if dislike.get(){
-                                                spawn_local(async move {
-                                                    match dislike_post(post_id).await {
-                                                        Ok(_) => {},
-                                                        Err(err) => {
-                                                            toaster.error(&format!("{:?}", err))
-                                                        }
-                                                    }
-                                                });
-                                            };
-                                        }
-                                    });
-
-                                    view! {
-                                        <div
-                                            class="cluster"
-                                            style="--cluster-justify: space-between;"
-                                        >
-                                        <div class="cluster">
-                                            <p style="font-weight: 700;">{post.id}</p>
-                                            <p style="font-weight: 700; color: var(--success);">
-                                                {post.author}
-                                            </p>
-                                        </div>
-                                        <p style="color: var(--muted);">{post.created_at
-                                            .with_timezone(&Local)
-                                            .format("%d.%m.%Y %H:%M").to_string()
-                                        }</p>
-                                        </div>
-                                        <div
-                                        class="stack post-contents"
-                                        style="--stack-gap: var(--s-2);"
-                                        >
-                                        <p
-                                        class="post-contents"
-                                        >
-                                            {post.contents}
-                                        </p>
-                                        <div
-                                        class="cluster"
-                                        >
-                                            <button
-                                                class="icon-btn"
-                                                title="Toggle like"
-                                                aria-label="Toggle like"
-                                                style=move || {
-                                                    if like.get() {
-                                                        "--hover-color:var(--success);
-                                                        align-items: baseline;
-                                                        color: var(--success);"
-                                                    } else {
-                                                        "--hover-color:var(--success);
-                                                        align-items: baseline;"
-                                                    }
-                                                }
-                                                on:click={
-                                                    let toaster = toaster.clone();
-                                                    move |_| {
-                                                        set_like.update(|value| *value = !*value);
-
-                                                        if like.get() {
-                                                            set_like_counter.update(|n| *n += 1);
-                                                        } else {
-                                                            set_like_counter.update(|n| *n -= 1);
-                                                        }
-
-                                                        if dislike.get() && like.get() {
-                                                            set_dislike.set(false);
-                                                            set_dislike_counter.update(|n| *n -= 1);
-                                                        };
-
-                                                        if !dislike.get() && !like.get() {
-                                                            let toaster = toaster.clone();
-                                                            spawn_local(async move {
-                                                                match undo_reaction(post_id).await {
-                                                                    Ok(_) => {},
-                                                                    Err(err) => {
-                                                                        toaster.error(&format!("{:?}", err))
-                                                                    }
-                                                                }
-                                                            });
-                                                        }
-                                                    }
-                                                }
-                                            >
-                                                <svg class="icon forum-reaction" alt="Toggle like">
-                                                    <use href="icons.svg#thumbs-up"></use>
-                                                </svg>
-                                                {like_counter}
-                                            </button>
-                                            <button
-                                                class="icon-btn"
-                                                title="Toggle dislike"
-                                                aria-label="Toggle dislike"
-                                                style=move || {
-                                                    if dislike.get() {
-                                                        "--hover-color:var(--error);
-                                                        align-items: baseline;
-                                                        color: var(--error);"
-                                                    } else {
-                                                        "--hover-color:var(--error);
-                                                        align-items: baseline;"
-                                                    }
-                                                }
-                                                on:click={
-                                                    let toaster = toaster.clone();
-                                                    move |_| {
-                                                        set_dislike.update(|value| *value = !*value);
-
-                                                        if dislike.get() {
-                                                            set_dislike_counter.update(|n| *n += 1);
-                                                        } else {
-                                                            set_dislike_counter.update(|n| *n -= 1);
-                                                        }
-
-                                                        if dislike.get() && like.get() {
-                                                            set_like.set(false);
-                                                            set_like_counter.update(|n| *n -= 1);
-                                                        };
-
-                                                        if !dislike.get() && !like.get() {
-                                                            let toaster = toaster.clone();
-                                                            spawn_local(async move {
-                                                                match undo_reaction(post_id).await {
-                                                                    Ok(_) => {},
-                                                                    Err(err) => {
-                                                                        toaster.error(&format!("{:?}", err))
-                                                                    }
-                                                                }
-                                                            });
-                                                        }
-                                                    }
-                                                }
-                                            >
-                                                <svg class="icon forum-reaction" alt="Toggle dislike">
-                                                    <use href="icons.svg#thumbs-down"></use>
-                                                </svg>
-                                                {dislike_counter}
-                                            </button>
-                                        </div>
-                                        </div>
-                                        <hr />
-                                    }
-                                }
-                            />
-                            <textarea
-                                name="message"
-                                placeholder="Write your message..."
-                                prop:value=move || message.get()
-                                on:input=move |ev| set_message.set(event_target_value(&ev))
-                                />
-                            <div class="cluster" style="--cluster-justify: space-between;">
-                                <button class="tetriary destructive">"Clear"</button>
-                                <button on:click=on_submit style="width: 50%;">"Send"</button>
-                            </div>
-                        }.into_any()
+            <hr />
+            <For
+                each=move || posts_sig.get()
+                key=|upost| (upost.post.id, upost.post.likes, upost.post.dislikes)
+                children=move |upost| {
+                    let toaster = toaster.clone();
+                        view!{
+                            <PostRow upost on_error=Callback::new(move |s: String| toaster.error(&s))/>
+                        }
+                }
+            />
+            <textarea
+                name="message"
+                placeholder="Write your message..."
+                prop:value=move || message.get()
+                on:input=move |ev| set_message.set(event_target_value(&ev))
+                on:keydown={
+                    let on_submit = on_submit.clone();
+                    move |ev: web_sys::KeyboardEvent| {
+                        if ev.key() == "Enter" && !ev.shift_key() {
+                            ev.prevent_default();
+                            on_submit();
+                        }
                     }
-        _ => view! {<div class="loading-spinner"></div>}.into_any(),
-    }
-        }
+                }
+                />
+            <div class="cluster" style="--cluster-justify: space-between;">
+                <button
+                class="tetriary destructive"
+                on:click=move |_| set_message.set("".to_string())
+                >
+                    "Clear"
+                </button>
+                <button
+                style="width: 50%;"
+                on:click=move |_| on_submit()
+                >
+                    "Send"
+                </button>
+            </div>
         </div>
     }.into_any()
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum Reaction
+{
+    None,
+    Like,
+    Dislike,
+}
+
+#[component]
+fn PostRow(upost: UserForumPost,
+           on_error: Callback<String>)
+           -> impl IntoView
+{
+    let post = upost.post;
+
+    // derive initial reaction
+    let init = if upost.liked {
+        Reaction::Like
+    } else if upost.disliked {
+        Reaction::Dislike
+    } else {
+        Reaction::None
+    };
+
+    let (reaction, set_reaction) = signal(init);
+    let (likes, set_likes) = signal(post.likes);
+    let (dislikes, set_dislikes) = signal(post.dislikes);
+
+    // optimistic toggle helper
+    let toggle = move |target: Reaction| {
+        let prev = reaction.get();
+        let next = if prev == target {
+            Reaction::None
+        } else {
+            target
+        };
+
+        // optimistic counters
+        match (prev, next) {
+            (Reaction::Like, Reaction::None) => {
+                set_likes.update(|n| *n -= 1)
+            }
+            (Reaction::Dislike, Reaction::None) => {
+                set_dislikes.update(|n| *n -= 1)
+            }
+            (Reaction::None, Reaction::Like) => {
+                set_likes.update(|n| *n += 1)
+            }
+            (Reaction::None, Reaction::Dislike) => {
+                set_dislikes.update(|n| *n += 1)
+            }
+            (Reaction::Dislike, Reaction::Like) => {
+                set_dislikes.update(|n| *n -= 1);
+                set_likes.update(|n| *n += 1);
+            }
+            (Reaction::Like, Reaction::Dislike) => {
+                set_likes.update(|n| *n -= 1);
+                set_dislikes.update(|n| *n += 1);
+            }
+            _ => {}
+        }
+        set_reaction.set(next);
+
+        let pid = post.id;
+        let on_error = on_error.clone();
+
+        spawn_local(async move {
+            let res = match next {
+                Reaction::Like => like_post(pid).await,
+                Reaction::Dislike => {
+                    dislike_post(pid).await
+                }
+                Reaction::None => undo_reaction(pid).await,
+            };
+            if let Err(e) = res {
+                on_error.run(format!("{e:?}"));
+            }
+        });
+    };
+
+    let like_active =
+        move || reaction.get() == Reaction::Like;
+    let dislike_active =
+        move || reaction.get() == Reaction::Dislike;
+
+    view! {
+        <div class="cluster" style="--cluster-justify: space-between;">
+            <div class="cluster">
+                <p style="font-weight:700;">{post.id}</p>
+                <p style="font-weight:700; color:var(--success);">{post.author.clone()}</p>
+            </div>
+            <p style="color:var(--muted);">
+                {post.created_at.with_timezone(&Local).format("%d.%m.%Y %H:%M").to_string()}
+            </p>
+        </div>
+
+        <div class="stack post-contents" style="--stack-gap: var(--s-2);">
+            <p class="post-contents">{post.contents.clone()}</p>
+
+            <div class="cluster">
+                <button
+                    class="icon-btn"
+                    style=move || if like_active() {
+                        "--hover-color:var(--success); color:var(--success); align-items:baseline;"
+                    } else {
+                        "--hover-color:var(--success); align-items:baseline;"
+                    }
+                    on:click=move |_| toggle(Reaction::Like)
+                >
+                    <svg class="icon forum-reaction" aria-hidden="true">
+                        <use href="icons.svg#thumbs-up"></use>
+                    </svg>
+                    {move || likes.get()}
+                </button>
+
+                <button
+                    class="icon-btn"
+                    style=move || if dislike_active() {
+                        "--hover-color:var(--error); color:var(--error); align-items:baseline;"
+                    } else {
+                        "--hover-color:var(--error); align-items:baseline;"
+                    }
+                    on:click=move |_| toggle(Reaction::Dislike)
+                >
+                    <svg class="icon forum-reaction" aria-hidden="true">
+                        <use href="icons.svg#thumbs-down"></use>
+                    </svg>
+                    {move || dislikes.get()}
+                </button>
+            </div>
+        </div>
+        <hr/>
+    }
 }

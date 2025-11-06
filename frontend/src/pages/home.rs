@@ -18,13 +18,8 @@ pub fn AuthHome() -> impl IntoView
 
     Effect::new(move |_| {
         if let Some(msg) = ws.message.get() {
-            match msg {
-                ServerMsg::StatsMsg(stats_info) => {
-                    set_online_count.set(stats_info.online);
-                }
-                _ => {
-                    log!("Unknown ServerMsg")
-                }
+            if let ServerMsg::StatsMsg(stats_info) = msg {
+                set_online_count.set(stats_info.online);
             }
         };
     });
