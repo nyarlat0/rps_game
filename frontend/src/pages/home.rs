@@ -1,4 +1,3 @@
-use leptos::logging::log;
 use leptos::prelude::*;
 
 use chrono::Local;
@@ -27,17 +26,14 @@ pub fn AuthHome() -> impl IntoView
     Effect::new({
         let ws = ws.clone();
         move |_| {
-            if ws.state.get() == ConnectionReadyState::Open
-            {
+            if ws.state.get() == ConnectionReadyState::Open {
                 ws.send(ClientMsg::GetStats);
             }
         }
     });
 
     use_interval_fn(move || {
-                        if ws.state.get()
-                           == ConnectionReadyState::Open
-                        {
+                        if ws.state.get() == ConnectionReadyState::Open {
                             ws.send(ClientMsg::GetStats);
                         }
                     },

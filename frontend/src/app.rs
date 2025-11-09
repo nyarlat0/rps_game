@@ -108,8 +108,6 @@ fn AuthView(visible_forum: ReadSignal<bool>,
     provide_context(WebsocketContext::new(ready_state, message, Arc::new(send.clone())));
     provide_context(user_info);
 
-    let (dummi_sig, _) = signal(true);
-
     view! {
         <main class="cover-center">
         <Routes fallback=|| "Not found.">
@@ -117,7 +115,6 @@ fn AuthView(visible_forum: ReadSignal<bool>,
             <Route path=path!("/login") view=|| {view! {<Redirect path="/" />}} />
             <Route path=path!("/register") view=|| {view! {<Redirect path="/" />}} />
             <Route path=path!("/game") view=Game />
-            <Route path=path!("/forum") view=ForumPage />
         </Routes>
         </main>
 

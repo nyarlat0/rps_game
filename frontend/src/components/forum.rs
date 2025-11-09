@@ -1,42 +1,89 @@
-use chrono::Local;
+use std::sync::Arc;
+
+use chrono::{DateTime, Datelike, Local, Utc};
 use leptos::{
-    html::Div, prelude::*, reactive::spawn_local,
+    html::{Div, Textarea},
+    prelude::*,
+    reactive::spawn_local,
 };
 use leptos_use::{use_scroll, UseScrollReturn};
-use shared::{
-    forum::UserForumPost, ws_messages::ServerMsg,
-};
+use shared::{auth::UserInfo, forum::UserForumPost, ws_messages::ServerMsg};
 
 use crate::{
-    api::{
-        create_post, dislike_post, fetch_posts,
-        fetch_posts_by, like_post, undo_reaction,
-    },
+    api::{create_post, dislike_post, fetch_posts, fetch_posts_by, like_post, undo_reaction},
     hooks::{MyToaster, WebsocketContext},
 };
 
+fn has_mention(s: &str, username: &str) -> bool
+{
+    s.split('@')
+     .skip(1) // parts after each '@'
+     .any(|tail| tail.starts_with(username))
+}
+
+#[inline]
+fn is_word(b: u8) -> bool
+{
+    matches!(b, b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_')
+}
+
+pub fn render_mentions(text: &str) -> impl IntoView + use<>
+{
+    let bs = text.as_bytes();
+    let mut out = Vec::new();
+    let (mut i, mut start) = (0, 0);
+
+    while i < bs.len() {
+        if bs[i] == b'@' {
+            let mut j = i + 1;
+            if j < bs.len() && is_word(bs[j]) {
+                while j < bs.len() && is_word(bs[j]) {
+                    j += 1;
+                }
+
+                if start < i {
+                    out.push(text[start..i].to_string().into_any());
+                }
+                out.push(view! { <span class="mention-name">{&text[i..j]}</span> }.into_any());
+
+                start = j;
+                i = j;
+                continue;
+            }
+        }
+        i += 1;
+    }
+    if start < bs.len() {
+        out.push(text[start..].to_string().into_any());
+    }
+    view! { <> {out} </> }
+}
+
 #[component]
-pub fn Forum(visible_forum: ReadSignal<bool>)
-             -> impl IntoView
+pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
 {
     let ws = {
         match use_context::<WebsocketContext>() {
             Some(ws) => ws,
-            None => return view! {
-                <div
-                    class="card stack forum"
-                    class:active=move || visible_forum.get()
-                >
-                    "Log in to see forum!"
-                </div>
-            }.into_any(),
+            None => {
+                return view! {
+                           <div
+                               class="card stack forum"
+                               class:active=move || visible_forum.get()
+                           >
+                               "Log in to see forum!"
+                           </div>
+                       }.into_any()
+            }
         }
     };
+    let user_info = expect_context::<UserInfo>();
+    let username = Arc::new(user_info.username.clone());
+    provide_context(username);
 
     let toaster = MyToaster::new();
 
-    let forum_res =
-        LocalResource::new(move || fetch_posts());
+    let forum_res = LocalResource::new(move || fetch_posts());
 
     let (message, set_message) = signal(String::new());
 
@@ -50,10 +97,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
                 spawn_local(async move {
                     match create_post(msg).await {
                         Ok(_) => forum_res.refetch(),
-                        Err(err) => {
-                            toaster.error(&format!("{:?}",
-                                                   err))
-                        }
+                        Err(err) => toaster.error(&format!("{:?}", err)),
                     }
                 });
                 set_message.set("".to_string());
@@ -62,12 +106,12 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
     };
 
     let forum_elem = NodeRef::<Div>::new();
-    let UseScrollReturn { y, set_y, .. } =
-        use_scroll(forum_elem);
+    let textarea_elem = NodeRef::<Textarea>::new();
+
+    let UseScrollReturn { y, set_y, .. } = use_scroll(forum_elem);
     let (scrolled_once, set_scrolled_once) = signal(false);
 
-    let (posts_sig, set_posts_sig) =
-        signal(Vec::<UserForumPost>::new());
+    let (posts_sig, set_posts_sig) = signal(Vec::<UserForumPost>::new());
 
     // fill fetched posts in the signal and scroll to the bottom
     Effect::new(move |_| {
@@ -81,8 +125,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
         let set_y = set_y.clone();
 
         move |_| {
-            let has_posts =
-                posts_sig.with(|v| !v.is_empty());
+            let has_posts = posts_sig.with(|v| !v.is_empty());
             let already = scrolled_once.get();
 
             if has_posts && !already {
@@ -96,13 +139,9 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
             let y_coord = y.get_untracked();
             if already {
                 if let Some(el) = forum_elem.get() {
-                    let bottom = (el.scroll_height()
-                                  - el.client_height())
-                                 as f64;
+                    let bottom = (el.scroll_height() - el.client_height()) as f64;
 
-                    if (bottom - y_coord)
-                       <= (5.0 * (bottom / 26.0))
-                    {
+                    if (bottom - y_coord) <= (5.0 * (bottom / 26.0)) {
                         set_y(bottom);
                     }
                 }
@@ -115,13 +154,8 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
         let toaster = toaster.clone();
         move |_| {
             let y_coord = y.get();
-            if let Some(UserForumPost { post, .. }) =
-                posts_sig.with(|v| v.first().cloned())
-            {
-                if visible_forum.get()
-                   && y_coord <= 64.0
-                   && post.id != 1
-                {
+            if let Some(UserForumPost { post, .. }) = posts_sig.with(|v| v.first().cloned()) {
+                if visible_forum.get() && y_coord <= 64.0 && post.id != 1 {
                     let post_id = post.id;
                     let toaster = toaster.clone();
 
@@ -130,15 +164,13 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
                         let start_id = (end_id - 25).max(1);
 
                         match fetch_posts_by(start_id, end_id).await {
-                        Some(prev_posts) => {
-                            set_posts_sig.update(move |posts| {
-                                posts.splice(0..0, prev_posts);
-                            });
+                            Some(prev_posts) => {
+                                set_posts_sig.update(move |posts| {
+                                                 posts.splice(0..0, prev_posts);
+                                             });
+                            }
+                            None => toaster.error("Could not load old posts."),
                         }
-                        None => {
-                            toaster.error("Could not load old posts.")
-                        }
-                    }
                     });
                 }
             }
@@ -150,11 +182,11 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
         if let Some(msg) = ws.message.get() {
             match msg {
                 ServerMsg::NewPostMsg(post) => {
-                    set_posts_sig.update(move |posts| posts.push(
-                            UserForumPost{
-                                post, liked: false, disliked: false
-                            }
-                    ));
+                    set_posts_sig.update(move |posts| {
+                                     posts.push(UserForumPost { post,
+                                                                liked: false,
+                                                                disliked: false })
+                                 });
                 }
                 _ => {}
             }
@@ -162,6 +194,15 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
     });
 
     view! {
+        <button
+            class="forum-reload-btn icon-btn"
+            class:active=move || visible_forum.get()
+            on:click=move |_| forum_res.refetch()
+        >
+            <svg class="icon forum-reaction-icon" aria-hidden="true">
+                <use href="icons.svg#rotate-ccw"></use>
+            </svg>
+        </button>
         <div
             class="card stack forum"
             class:active=move || visible_forum.get()
@@ -175,13 +216,27 @@ pub fn Forum(visible_forum: ReadSignal<bool>)
                 children=move |upost| {
                     let toaster = toaster.clone();
                         view!{
-                            <PostRow upost on_error=Callback::new(move |s: String| toaster.error(&s))/>
+                            <PostRow
+                                upost
+                                on_author=Callback::new(move |s: String| {
+
+                                    set_message.update(|mes| {
+                                        mes.push_str(&format!("@{}, ", s))
+                                    });
+
+                                    if let Some(el) = textarea_elem.get() {
+                                        el.focus().ok();
+                                    }
+                                })
+                                on_error=Callback::new(move |s: String| toaster.error(&s))
+                            />
                         }
                 }
             />
             <textarea
                 name="message"
                 placeholder="Write your message..."
+                node_ref=textarea_elem
                 prop:value=move || message.get()
                 on:input=move |ev| set_message.set(event_target_value(&ev))
                 on:keydown={
@@ -222,10 +277,12 @@ enum Reaction
 
 #[component]
 fn PostRow(upost: UserForumPost,
+           on_author: Callback<String>,
            on_error: Callback<String>)
            -> impl IntoView
 {
     let post = upost.post;
+    let username = expect_context::<Arc<String>>();
 
     // derive initial reaction
     let init = if upost.liked {
@@ -251,18 +308,10 @@ fn PostRow(upost: UserForumPost,
 
         // optimistic counters
         match (prev, next) {
-            (Reaction::Like, Reaction::None) => {
-                set_likes.update(|n| *n -= 1)
-            }
-            (Reaction::Dislike, Reaction::None) => {
-                set_dislikes.update(|n| *n -= 1)
-            }
-            (Reaction::None, Reaction::Like) => {
-                set_likes.update(|n| *n += 1)
-            }
-            (Reaction::None, Reaction::Dislike) => {
-                set_dislikes.update(|n| *n += 1)
-            }
+            (Reaction::Like, Reaction::None) => set_likes.update(|n| *n -= 1),
+            (Reaction::Dislike, Reaction::None) => set_dislikes.update(|n| *n -= 1),
+            (Reaction::None, Reaction::Like) => set_likes.update(|n| *n += 1),
+            (Reaction::None, Reaction::Dislike) => set_dislikes.update(|n| *n += 1),
             (Reaction::Dislike, Reaction::Like) => {
                 set_dislikes.update(|n| *n -= 1);
                 set_likes.update(|n| *n += 1);
@@ -281,9 +330,7 @@ fn PostRow(upost: UserForumPost,
         spawn_local(async move {
             let res = match next {
                 Reaction::Like => like_post(pid).await,
-                Reaction::Dislike => {
-                    dislike_post(pid).await
-                }
+                Reaction::Dislike => dislike_post(pid).await,
                 Reaction::None => undo_reaction(pid).await,
             };
             if let Err(e) = res {
@@ -292,28 +339,35 @@ fn PostRow(upost: UserForumPost,
         });
     };
 
-    let like_active =
-        move || reaction.get() == Reaction::Like;
-    let dislike_active =
-        move || reaction.get() == Reaction::Dislike;
+    let like_active = move || reaction.get() == Reaction::Like;
+    let dislike_active = move || reaction.get() == Reaction::Dislike;
 
     view! {
         <div class="cluster" style="--cluster-justify: space-between;">
             <div class="cluster">
                 <p style="font-weight:700;">{post.id}</p>
-                <p style="font-weight:700; color:var(--success);">{post.author.clone()}</p>
+                <button
+                class="forum-author-btn"
+                on:click=move |_| {on_author.run(post.author.clone())}
+                >
+                    {post.author.clone()}
+                </button>
             </div>
             <p style="color:var(--muted);">
-                {post.created_at.with_timezone(&Local).format("%d.%m.%Y %H:%M").to_string()}
+                {display_time(post.created_at)}
             </p>
         </div>
 
-        <div class="stack post-contents" style="--stack-gap: var(--s-2);">
-            <p class="post-contents">{post.contents.clone()}</p>
+        <div
+        class="stack post-contents"
+        class:mention=has_mention(&post.contents, &username)
+        style="--stack-gap: var(--s-2);"
+        >
+            <p>{render_mentions(&post.contents)}</p>
 
             <div class="cluster">
                 <button
-                    class="icon-btn"
+                    class="forum-reaction-btn icon-btn"
                     style=move || if like_active() {
                         "--hover-color:var(--success); color:var(--success); align-items:baseline;"
                     } else {
@@ -321,14 +375,14 @@ fn PostRow(upost: UserForumPost,
                     }
                     on:click=move |_| toggle(Reaction::Like)
                 >
-                    <svg class="icon forum-reaction" aria-hidden="true">
+                    <svg class="icon forum-reaction-icon" aria-hidden="true">
                         <use href="icons.svg#thumbs-up"></use>
                     </svg>
                     {move || likes.get()}
                 </button>
 
                 <button
-                    class="icon-btn"
+                    class="forum-reaction-btn icon-btn"
                     style=move || if dislike_active() {
                         "--hover-color:var(--error); color:var(--error); align-items:baseline;"
                     } else {
@@ -336,7 +390,7 @@ fn PostRow(upost: UserForumPost,
                     }
                     on:click=move |_| toggle(Reaction::Dislike)
                 >
-                    <svg class="icon forum-reaction" aria-hidden="true">
+                    <svg class="icon forum-reaction-icon" aria-hidden="true">
                         <use href="icons.svg#thumbs-down"></use>
                     </svg>
                     {move || dislikes.get()}
@@ -344,5 +398,19 @@ fn PostRow(upost: UserForumPost,
             </div>
         </div>
         <hr/>
+    }
+}
+
+fn display_time(dt: DateTime<Utc>) -> String
+{
+    let dt = dt.with_timezone(&Local);
+    let now = Local::now();
+
+    if dt.date_naive() == now.date_naive() {
+        dt.format("%H:%M").to_string()
+    } else if dt.year() == now.year() {
+        dt.format("%-d %b %H:%M").to_string()
+    } else {
+        dt.format("%d.%m.%Y %H:%M").to_string()
     }
 }

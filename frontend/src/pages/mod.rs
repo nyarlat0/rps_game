@@ -1,9 +1,7 @@
-mod forum_page;
 mod game;
 mod home;
 mod login;
 mod register;
-pub use forum_page::ForumPage;
 pub use game::Game;
 pub use home::{AuthHome, UnAuthHome};
 pub use login::Login;
