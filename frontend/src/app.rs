@@ -3,9 +3,7 @@ use leptoaster::*;
 use leptos::prelude::*;
 use leptos_router::components::*;
 use leptos_router::path;
-use leptos_use::{
-    storage::*, use_websocket, UseWebSocketReturn,
-};
+use leptos_use::{storage::*, use_websocket, UseWebSocketReturn};
 use shared::{auth::UserInfo, ws_messages::*};
 use std::sync::Arc;
 
@@ -14,18 +12,29 @@ use crate::components::*;
 use crate::hooks::WebsocketContext;
 use crate::pages::*;
 
+#[derive(Clone, Copy)]
+pub struct NewPostsContext(pub ReadSignal<bool>, pub WriteSignal<bool>);
+
+#[derive(Clone, Copy)]
+pub struct AdminToggleCtx(pub ReadSignal<bool>, pub WriteSignal<bool>);
+
 #[component]
 pub fn App() -> impl IntoView
 {
     provide_toaster();
     let (visible_forum, set_visible_forum) = signal(false);
 
-    let (light, set_light, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
-    let (hue, set_hue, _) =
-        use_local_storage::<i32, FromToStringCodec>("hue");
-    let info =
-        LocalResource::new(move || fetch_user_info());
+    let info = LocalResource::new(move || fetch_user_info());
     provide_context(info);
+
+    let (new_posts, set_new_posts) = signal(false);
+    provide_context(NewPostsContext(new_posts, set_new_posts));
+
+    let (admin, set_admin) = signal(false);
+    provide_context(AdminToggleCtx(admin, set_admin));
+
+    let (light, _, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
+    let (hue, _, _) = use_local_storage::<i32, FromToStringCodec>("hue");
 
     view! {
         <Toaster />
@@ -70,16 +79,16 @@ pub fn App() -> impl IntoView
                     <a href="/contact">"Contact"</a>
                 </nav>
             </footer>
-
-            <Settings light set_light hue set_hue/>
         </Router>
     }
 }
 
 #[component]
-fn UnAuthView(visible_forum: ReadSignal<bool>)
-              -> impl IntoView
+fn UnAuthView(visible_forum: ReadSignal<bool>) -> impl IntoView
 {
+    let (light, set_light, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
+    let (hue, set_hue, _) = use_local_storage::<i32, FromToStringCodec>("hue");
+
     view! {
         <main class="cover-center">
         <Routes fallback=|| "Not found.">
@@ -90,20 +99,21 @@ fn UnAuthView(visible_forum: ReadSignal<bool>)
         </main>
 
         <Forum visible_forum />
+        <Settings light set_light hue set_hue/>
     }
 }
 
 #[component]
-fn AuthView(visible_forum: ReadSignal<bool>,
-            user_info: UserInfo)
-            -> impl IntoView
+fn AuthView(visible_forum: ReadSignal<bool>, user_info: UserInfo) -> impl IntoView
 {
-    let UseWebSocketReturn {
-        ready_state,
-        message,
-        send,
-        ..
-    } = use_websocket::<ClientMsg, ServerMsg, JsonSerdeCodec>("/api/ws");
+    let (light, set_light, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
+    let (hue, set_hue, _) = use_local_storage::<i32, FromToStringCodec>("hue");
+
+    let UseWebSocketReturn { ready_state,
+                             message,
+                             send,
+                             .. } =
+        use_websocket::<ClientMsg, ServerMsg, JsonSerdeCodec>("/api/ws");
 
     provide_context(WebsocketContext::new(ready_state, message, Arc::new(send.clone())));
     provide_context(user_info);
@@ -119,5 +129,6 @@ fn AuthView(visible_forum: ReadSignal<bool>,
         </main>
 
         <Forum visible_forum />
+        <Settings light set_light hue set_hue/>
     }
 }

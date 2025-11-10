@@ -6,6 +6,7 @@ pub struct UserInfo
 {
     pub username: String,
     pub created_at: DateTime<Utc>,
+    pub role: String,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]

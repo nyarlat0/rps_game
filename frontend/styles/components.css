@@ -91,6 +91,7 @@
 
   /* Safe, minimal button reset */
   button.icon-btn {
+    overflow: visible;
     appearance: none;
     border: 0;
     background: none;
@@ -139,6 +140,7 @@
     pointer-events: none;
 
     overflow-y: scroll;
+    scroll-behavior: auto;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklch, var(--ink) 10%, transparent) transparent;
@@ -230,6 +232,42 @@
     }
   }
 
+  button.forum-scroll-btn {
+    position: absolute;
+    top: calc(2.5cap + 2*var(--s-2) + 80dvh - var(--s1));
+    right: calc(var(--s-1));
+    z-index: 25;
+    padding: var(--s-4);
+
+    color: var(--muted);
+
+    &:hover{
+      color: var(--ink);
+      background: transparent;
+    }
+
+    opacity: 0;
+    display: none;
+    transition-timing-function: ease-in;
+    transition: opacity .2s;
+
+    &.active {
+      opacity: 1;
+      display: flex;
+      pointer-events: auto;
+      transition-timing-function: ease-out;
+
+      @starting-style {
+        opacity: 0;
+      }
+    }
+  }
+  
+  .forum-scroll-icon {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+  }
+
   button.forum-author-btn {
     color: var(--success);
     padding: 0 var(--s-2);
@@ -255,6 +293,18 @@
       background: transparent;
       box-shadow: none;
     }
+  }
+
+  .has-new::after {
+    content: "";
+    z-index: 25;
+    position: absolute;
+    inset-block-start: -2px;
+    inset-inline-end: -2px;
+    width: 8px; height: 8px;
+    border-radius: 9999px;
+    background: var(--success);
+    outline: 2px solid var(--surface, #0b0b0b);
   }
 
   button, .button {
@@ -328,13 +378,14 @@
   }
 
   .loading-spinner {
+    flex: none;
     width: 2.5rem;
     height: 2.5rem;
     border: 0.3rem solid transparent;
     border-top: 0.3rem solid var(--brand);
     border-radius: 50%;
     animation: spinner 1s linear infinite;
-    margin: 1rem auto;
+    margin: 0 auto;
   }
 
   .test-layout {

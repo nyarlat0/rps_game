@@ -1,18 +1,28 @@
+use leptos::logging::log;
+use leptos::task;
 use std::sync::Arc;
 
 use chrono::{DateTime, Datelike, Local, Utc};
+use codee::string::FromToStringCodec;
 use leptos::{
     html::{Div, Textarea},
     prelude::*,
     reactive::spawn_local,
 };
-use leptos_use::{use_scroll, UseScrollReturn};
+use leptos_use::{storage::use_local_storage, use_scroll, UseScrollReturn};
 use shared::{auth::UserInfo, forum::UserForumPost, ws_messages::ServerMsg};
 
 use crate::{
-    api::{create_post, dislike_post, fetch_posts, fetch_posts_by, like_post, undo_reaction},
+    api::{
+        create_post, delete_post, dislike_post, fetch_posts, fetch_posts_by, like_post,
+        undo_reaction,
+    },
+    app::{AdminToggleCtx, NewPostsContext},
     hooks::{MyToaster, WebsocketContext},
 };
+
+#[derive(Clone)]
+struct UsernameCtx(Arc<String>);
 
 fn has_mention(s: &str, username: &str) -> bool
 {
@@ -27,7 +37,7 @@ fn is_word(b: u8) -> bool
     matches!(b, b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_')
 }
 
-pub fn render_mentions(text: &str) -> impl IntoView + use<>
+fn render_mentions(text: &str) -> impl IntoView + use<>
 {
     let bs = text.as_bytes();
     let mut out = Vec::new();
@@ -79,7 +89,12 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
     };
     let user_info = expect_context::<UserInfo>();
     let username = Arc::new(user_info.username.clone());
-    provide_context(username);
+    provide_context(UsernameCtx(username));
+
+    let (last_seen, set_last_seen, _) =
+        use_local_storage::<i64, FromToStringCodec>("last_seen_post");
+
+    let NewPostsContext(new_posts, set_new_posts) = expect_context::<NewPostsContext>();
 
     let toaster = MyToaster::new();
 
@@ -111,6 +126,9 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
     let UseScrollReturn { y, set_y, .. } = use_scroll(forum_elem);
     let (scrolled_once, set_scrolled_once) = signal(false);
 
+    let (near_top, set_near_top) = signal(false);
+    let (near_bottom, set_near_bottom) = signal(true);
+
     let (posts_sig, set_posts_sig) = signal(Vec::<UserForumPost>::new());
 
     // fill fetched posts in the signal and scroll to the bottom
@@ -130,7 +148,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
 
             if has_posts && !already {
                 if let Some(el) = forum_elem.get() {
-                    let bottom = el.scroll_height() as f64;
+                    let bottom = (el.scroll_height() - el.client_height()) as f64;
                     set_y(bottom);
                     set_scrolled_once.set(true);
                 }
@@ -150,15 +168,31 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
     });
 
     // fetch more on scroll up
+    let (loading, set_loading) = signal(false);
     Effect::new({
         let toaster = toaster.clone();
+        let set_y = set_y.clone();
+
         move |_| {
-            let y_coord = y.get();
-            if let Some(UserForumPost { post, .. }) = posts_sig.with(|v| v.first().cloned()) {
-                if visible_forum.get() && y_coord <= 64.0 && post.id != 1 {
+            if loading.get_untracked() || !scrolled_once.get() {
+                log!("Still loading!");
+                return;
+            };
+            let near = near_top.get();
+
+            if let Some(UserForumPost { post, .. }) =
+                posts_sig.with_untracked(|v| v.first().cloned())
+            {
+                if visible_forum.get_untracked() && near && post.id != 1 {
+                    log!("Top scroll effect triggerd!");
                     let post_id = post.id;
                     let toaster = toaster.clone();
+                    let set_y = set_y.clone();
+                    let y_coord = y.get_untracked();
 
+                    let h_before = forum_elem.get_untracked().unwrap().scroll_height() as f64;
+
+                    set_loading.set(true);
                     spawn_local(async move {
                         let end_id = post_id - 1;
                         let start_id = (end_id - 25).max(1);
@@ -168,6 +202,20 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
                                 set_posts_sig.update(move |posts| {
                                                  posts.splice(0..0, prev_posts);
                                              });
+
+                                task::tick().await;
+
+                                if let Some(el) = forum_elem.get_untracked() {
+                                    let h_after = el.scroll_height() as f64;
+                                    log!("before: {h_before}, after: {h_after}");
+                                    set_y(y_coord + h_after - h_before);
+                                    log!("set y to {}", y_coord + h_after - h_before);
+
+                                    task::tick().await;
+
+                                    log!("setting loading false!");
+                                    set_loading.set(false);
+                                }
                             }
                             None => toaster.error("Could not load old posts."),
                         }
@@ -193,6 +241,71 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
         };
     });
 
+    // update last seen counter
+    Effect::new(move |_| {
+        let opt_id = posts_sig.with(|v| v.last().map(|up| up.post.id));
+        let y_coord = y.get();
+
+        if visible_forum.get() {
+            if let Some(last_id) = opt_id {
+                if let Some(el) = forum_elem.get_untracked() {
+                    let text_el = textarea_elem.get().unwrap();
+                    let bottom = (el.scroll_height()
+                                  - el.client_height()
+                                  - text_el.client_height()
+                                  - text_el.scroll_height())
+                                 as f64;
+                    if (bottom - y_coord) <= 40.0 {
+                        set_last_seen.update(|ls| *ls = (*ls).max(last_id));
+                    }
+                }
+            }
+        }
+    });
+
+    // set new posts marker
+    Effect::new(move |_| {
+        let ls = last_seen.get();
+        let opt_id = posts_sig.with(|v| v.last().map(|up| up.post.id));
+
+        if let Some(last_id) = opt_id {
+            if last_id != ls {
+                set_new_posts.set(true);
+            } else if new_posts.get_untracked() {
+                set_new_posts.set(false);
+            }
+        }
+    });
+
+    // track near bottom position
+    Effect::new(move || {
+        let y_coord = y.get();
+        if let Some(el) = forum_elem.get_untracked() {
+            let bottom = (el.scroll_height() - el.client_height()) as f64;
+            let thresh = 3.0 * (bottom / 26.0);
+
+            let is_near = (bottom - y_coord) <= thresh;
+
+            if is_near != near_bottom.get_untracked() {
+                set_near_bottom.set(is_near);
+            }
+        }
+    });
+
+    // track near top position
+    Effect::new({
+        move |_| {
+            let y_px = y.get(); // tracked on scroll
+            let is_near = y_px <= 64.0;
+            if near_top.get_untracked() != is_near {
+                log!("setiing near_top to {}", is_near);
+                set_near_top.set(is_near);
+            }
+        }
+    });
+
+    let AdminToggleCtx(is_admin, _) = expect_context::<AdminToggleCtx>();
+
     view! {
         <button
             class="forum-reload-btn icon-btn"
@@ -203,12 +316,40 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
                 <use href="icons.svg#rotate-ccw"></use>
             </svg>
         </button>
+        <button
+            class="forum-scroll-btn icon-btn"
+            class:active=move || visible_forum.get()
+            style=move || if near_bottom.get() {
+                "display: none;"
+            } else {
+                ""
+            }
+            on:click=move |_| {
+                if let Some(el) = forum_elem.get() {
+                    let bottom = (el.scroll_height() - el.client_height()) as f64;
+                    set_y(bottom);
+                    set_near_bottom.set(true);
+                }
+            }
+        >
+            <svg class="icon forum-scroll-icon" aria-hidden="true">
+                <use href="icons.svg#arrow-down"></use>
+            </svg>
+        </button>
         <div
             class="card stack forum"
             class:active=move || visible_forum.get()
             node_ref=forum_elem
         >
             <h3>"Forum"</h3>
+            <div
+                class:loading-spinner=move || loading.get()
+                style=move || if loading.get() {
+                    ""
+                } else {
+                    "display: none;"
+                }
+            ></div>
             <hr />
             <For
                 each=move || posts_sig.get()
@@ -218,6 +359,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
                         view!{
                             <PostRow
                                 upost
+                                is_admin
                                 on_author=Callback::new(move |s: String| {
 
                                     set_message.update(|mes| {
@@ -229,6 +371,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
                                     }
                                 })
                                 on_error=Callback::new(move |s: String| toaster.error(&s))
+                                on_refetch=Callback::new(move |_| forum_res.refetch())
                             />
                         }
                 }
@@ -277,12 +420,14 @@ enum Reaction
 
 #[component]
 fn PostRow(upost: UserForumPost,
+           is_admin: ReadSignal<bool>,
            on_author: Callback<String>,
-           on_error: Callback<String>)
+           on_error: Callback<String>,
+           on_refetch: Callback<()>)
            -> impl IntoView
 {
     let post = upost.post;
-    let username = expect_context::<Arc<String>>();
+    let UsernameCtx(username) = expect_context::<UsernameCtx>();
 
     // derive initial reaction
     let init = if upost.liked {
@@ -339,6 +484,20 @@ fn PostRow(upost: UserForumPost,
         });
     };
 
+    let delete_btn = move || {
+        let pid = post.id;
+        let on_error = on_error.clone();
+
+        spawn_local(async move {
+            let res = delete_post(pid).await;
+            if let Err(e) = res {
+                on_error.run(format!("{e:?}"));
+            } else {
+                on_refetch.run(());
+            }
+        });
+    };
+
     let like_active = move || reaction.get() == Reaction::Like;
     let dislike_active = move || reaction.get() == Reaction::Dislike;
 
@@ -365,6 +524,7 @@ fn PostRow(upost: UserForumPost,
         >
             <p>{render_mentions(&post.contents)}</p>
 
+            <div class="cluster" style="--cluster-justify: space-between; --cluster-align: baseline;">
             <div class="cluster">
                 <button
                     class="forum-reaction-btn icon-btn"
@@ -395,6 +555,21 @@ fn PostRow(upost: UserForumPost,
                     </svg>
                     {move || dislikes.get()}
                 </button>
+            </div>
+            <button
+            class="forum-reaction-btn icon-btn"
+            style=move || if is_admin.get() {
+                "--hover-color:var(--error);"
+            } else {
+                "display: none;"
+            }
+            on:click=move |_| {delete_btn()}
+            >
+                <svg class="icon forum-reaction-icon" aria-hidden="true">
+                        <use href="icons.svg#trash-2"></use>
+                </svg>
+            </button>
+
             </div>
         </div>
         <hr/>

@@ -4,6 +4,8 @@ use leptos_use::{
     UseCycleListOptions, UseCycleListReturn,
 };
 
+use crate::app::NewPostsContext;
+
 #[component]
 pub fn NavBar(visible_forum: ReadSignal<bool>,
               set_visible_forum: WriteSignal<bool>)
@@ -15,6 +17,8 @@ pub fn NavBar(visible_forum: ReadSignal<bool>,
         vec![ColorMode::Dark, ColorMode::Light],
         UseCycleListOptions::default().initial_value(Some((mode, set_mode).into())),
     );
+
+    let NewPostsContext(new_posts, _) = expect_context();
 
     view! {
         <nav
@@ -35,8 +39,6 @@ pub fn NavBar(visible_forum: ReadSignal<bool>,
             }
             }
             </a>
-
-            //<div class="loading-spinner"></div>
 
             <div
             class="cluster"
@@ -68,6 +70,7 @@ pub fn NavBar(visible_forum: ReadSignal<bool>,
             <button
                 class="icon-btn"
                 class:forum-btn-pressed=move || visible_forum.get()
+                class:has-new=move || new_posts.get()
                 title="Toggle forum"
                 aria-label="Toggle forum"
                 on:click=move |_| set_visible_forum.update(|value| *value = !*value)

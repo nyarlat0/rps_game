@@ -1,4 +1,7 @@
 use leptos::prelude::*;
+use shared::auth::UserInfo;
+
+use crate::app::AdminToggleCtx;
 
 #[component]
 pub fn Settings(light: Signal<i32>,
@@ -7,10 +10,36 @@ pub fn Settings(light: Signal<i32>,
                 set_hue: WriteSignal<i32>)
                 -> impl IntoView
 {
+    let role = use_context::<UserInfo>().map(|ui| ui.role)
+                                        .unwrap_or("user".to_string());
+
+    let AdminToggleCtx(admin, set_admin) = expect_context::<AdminToggleCtx>();
+
     view! {
         <div id="settings" popover="auto" class="stack fill-page">
 
             <h1>"Settings"</h1>
+
+            <div
+            class="cluster"
+            style=move || if (role == "admin") || (role == "moderator") {
+                "--cluster-align: baseline;"
+            } else {
+                "display: none;"
+            }
+            >
+            <input
+            name="admin" id="admin" type="checkbox"
+            style="inline-size: 0.9rem; block-size: 0.9rem;"
+            prop:checked=admin
+            on:change=move |ev| {
+                set_admin.set(event_target_checked(&ev));
+            }
+            />
+            <label for="admin" style="font-weight: 700;">
+                "Admin Controls"
+            </label>
+            </div>
 
             <label for="light" style="font-weight: 700;">
                 {move || format!("Light: {:+}%", light.get())}
