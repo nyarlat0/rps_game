@@ -147,7 +147,7 @@
     --surface: oklch(calc(var(--set-light) + 0.95) 0 var(--cold-hue)); /* 0.9 - 1.0 */
     --surface-high: oklch(from var(--surface) calc(l + 0.05) c h);
     --surface-deep: oklch(from var(--surface) calc(l - 0.05) c h);
-    --border: oklch(from var(--surface) calc(l - 0.1) c h);
+    --golden: color-mix(in oklch, gold 40%, var(--surface));
 
     --ink: oklch(
       from var(--surface)
@@ -196,8 +196,7 @@
 
     --outline: var(--s-5) solid var(--focus);
 
-    --border: var(--s-6) solid
-      oklch(from var(--surface) calc(l - 0.03) c h / .6);
+    --border: 2px solid oklch(from var(--surface) calc(l - 0.03) c h / .6);
 
     --shadow-low: var(--s-4) var(--s-3) var(--s-3) oklch(0% 0 0 / 45%);
     --shadow: var(--s-3) var(--s-2) var(--s-2) oklch(0% 0 0 / 40%);

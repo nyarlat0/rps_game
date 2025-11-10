@@ -8,6 +8,7 @@ use leptos_use::UseWebSocketOptions;
 use leptos_use::{storage::*, use_websocket, UseWebSocketReturn};
 use shared::{auth::UserInfo, ws_messages::*};
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::api::fetch_user_info;
 use crate::components::*;
@@ -51,6 +52,8 @@ pub fn App() -> impl IntoView
         }
     });
 
+    let load_anim = Signal::derive(move || info.get().is_some());
+
     view! {
         <Toaster />
         <Router>
@@ -65,11 +68,18 @@ pub fn App() -> impl IntoView
             <NavBar />
             </header>
 
+            <main class="cover-center vt-page">
+            <AnimatedShow
+                when=load_anim
+                show_class="load-anim-in"
+                hide_class="load-anim-out"
+                hide_delay=Duration::from_millis(300)
+            >
             {
                 move || match info.get() {
                     // loading user info
                     None => view! {
-                        <main class="cover-center">
+                        <main class="cover-center vt-page">
                             <div class="loading-spinner"></div>
                         </main>
                     }.into_any(),
@@ -81,18 +91,11 @@ pub fn App() -> impl IntoView
                     Some(Some(user_info)) => view!{<AuthView user_info />}.into_any(),
                 }
             }
+            </AnimatedShow>
+            </main>
 
-
-            <footer class="site-footer">
-                <nav
-                    aria-label="Footer"
-                    class="cluster"
-                    style="--cluster-justify: flex-end; --cluster-gap: var(--s1)"
-                >
-                    <a href="/donate">"Donate"</a>
-                    <a href="/about">"About"</a>
-                    <a href="/contact">"Contact"</a>
-                </nav>
+            <footer>
+            <Deck />
             </footer>
 
             <Forum />
@@ -105,13 +108,11 @@ pub fn App() -> impl IntoView
 fn UnAuthView() -> impl IntoView
 {
     view! {
-        <main class="cover-center">
-        <Routes fallback=|| "Not found.">
+        <Routes transition=true fallback=|| "Not found.">
             <Route path=path!("/login") view=Login />
             <Route path=path!("/register") view=Register />
             <Route path=path!("/*any") view=UnAuthHome />
         </Routes>
-        </main>
     }
 }
 
@@ -131,13 +132,11 @@ fn AuthView(user_info: UserInfo) -> impl IntoView
     set_authed.set(true);
 
     view! {
-        <main class="cover-center">
-        <Routes fallback=|| "Not found.">
+        <Routes transition=true fallback=|| "Not found.">
             <Route path=path!("/") view=AuthHome/>
             <Route path=path!("/login") view=|| {view! {<Redirect path="/" />}} />
             <Route path=path!("/register") view=|| {view! {<Redirect path="/" />}} />
             <Route path=path!("/game") view=Game />
         </Routes>
-        </main>
     }
 }

@@ -1,5 +1,56 @@
 @layer components {
 
+  .vt-page {
+    view-transition-name: page;
+  }
+  .upper-deck-card {
+    view-transition-name: deck;
+  }
+
+  ::view-transition-group(deck) { z-index: 2; }
+  ::view-transition-group(page) { z-index: 1; }
+
+  /* Keep the deck frozen (no crossfade/move) */
+  ::view-transition-old(deck) {animation: none; }
+  ::view-transition-new(deck) { animation: none; }
+
+  /* old page: slide down immediately */
+  ::view-transition-old(page) {
+    animation: vt-slide-out 0.3s ease-out both;
+  }
+
+  /* new page: wait a beat, then slide up */
+  ::view-transition-new(page) {
+    animation: vt-slide-in 0.3s ease-in both;
+    animation-delay: .3s;
+  }
+
+  .load-anim-in { animation: vt-slide-in .3s ease-in both; }
+  .load-anim-out { animation: vt-slide-out .3s ease-out both; }
+
+  /* keyframes */
+  @keyframes vt-slide-out {
+  from {
+    transform: none; 
+  }
+  to   {
+    transform: translateY(80dvh);
+  }
+  }
+  @keyframes vt-slide-in {
+  from {
+    transform: translateY(80dvh);
+  }
+  to   {
+    transform: none;
+  }
+  }
+
+  /* accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(page), ::view-transition-new(page) { animation: none; }
+  }
+
   .site-header {
     position: sticky;
     inset-block-start: 0;
@@ -12,7 +63,6 @@
   /* Footer just sits at the bottom row */
   .site-footer {
     padding: 0 var(--s-2);
-    background: color-mix(in oklch, var(--surface), black 3%);
     & > nav > a {
       color: var(--muted);
       &:hover {
@@ -21,6 +71,21 @@
     }
   }
 
+  .deck {
+    --surface: var(--surface-deep);
+    position: absolute;
+    min-inline-size: min(80dvw, 35ch);
+    min-height: calc(30px + 2.5rem);
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    overflow: hidden;
+  }
+
+  .deck-card {
+    position: absolute;
+    min-height: 30ch;
+  }
 
   .card, [popover] {
     color: var(--ink);
@@ -34,6 +99,12 @@
     overflow-wrap: anywhere;
 
     box-shadow: var(--shadow);
+
+    &.deck-card {
+      box-shadow: none;
+      background: var(--surface-deep);
+      border: 2px solid oklch(from var(--surface-deep) calc(l + 0.03) c h / .6);
+    }
   }
 
   [popover] {
@@ -262,7 +333,7 @@
       }
     }
   }
-  
+
   .forum-scroll-icon {
     inline-size: 1.5rem;
     block-size: 1.5rem;
