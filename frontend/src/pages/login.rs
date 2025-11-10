@@ -1,7 +1,10 @@
-use crate::{api::login_user, hooks::MyToaster};
+use crate::{
+    api::login_user,
+    hooks::{MyToaster, UserResCtx},
+};
 use leptos::{prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
-use shared::auth::{Credentials, UserInfo};
+use shared::auth::Credentials;
 use web_sys::SubmitEvent;
 
 #[component]
@@ -13,16 +16,14 @@ pub fn Login() -> impl IntoView
     let navigate = use_navigate();
     let toaster = MyToaster::new();
 
-    let info_resource =
-        expect_context::<LocalResource<Option<UserInfo>>>();
+    let UserResCtx(info_resource) = expect_context::<UserResCtx>();
 
     toaster.info("By logging in you argee to our cookie policy.");
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
-        let creds =
-            Credentials { username: username.get(),
-                          password: password.get() };
+        let creds = Credentials { username: username.get(),
+                                  password: password.get() };
 
         let toaster = toaster.clone();
         let navigate = navigate.clone();

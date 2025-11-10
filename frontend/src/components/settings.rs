@@ -1,19 +1,25 @@
+use codee::string::FromToStringCodec;
 use leptos::prelude::*;
-use shared::auth::UserInfo;
+use leptos_use::storage::use_local_storage;
 
-use crate::app::AdminToggleCtx;
+use crate::hooks::{SettingsCtx, UserResCtx};
 
 #[component]
-pub fn Settings(light: Signal<i32>,
-                set_light: WriteSignal<i32>,
-                hue: Signal<i32>,
-                set_hue: WriteSignal<i32>)
-                -> impl IntoView
+pub fn Settings() -> impl IntoView
 {
-    let role = use_context::<UserInfo>().map(|ui| ui.role)
-                                        .unwrap_or("user".to_string());
+    let UserResCtx(user_res) = expect_context::<UserResCtx>();
 
-    let AdminToggleCtx(admin, set_admin) = expect_context::<AdminToggleCtx>();
+    let role = move || {
+        user_res.get()
+                .flatten()
+                .map(|ui| ui.role)
+                .unwrap_or("user".to_string())
+    };
+
+    let (light, set_light, _) = use_local_storage::<i32, FromToStringCodec>("lightness");
+    let (hue, set_hue, _) = use_local_storage::<i32, FromToStringCodec>("hue");
+
+    let (admin, set_admin) = expect_context::<SettingsCtx>().admin_control;
 
     view! {
         <div id="settings" popover="auto" class="stack fill-page">
@@ -22,7 +28,7 @@ pub fn Settings(light: Signal<i32>,
 
             <div
             class="cluster"
-            style=move || if (role == "admin") || (role == "moderator") {
+            style=move || if (role() == "admin") || (role() == "moderator") {
                 "--cluster-align: baseline;"
             } else {
                 "display: none;"

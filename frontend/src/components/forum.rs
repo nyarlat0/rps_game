@@ -1,4 +1,3 @@
-use leptos::logging::log;
 use leptos::task;
 use std::sync::Arc;
 
@@ -10,15 +9,14 @@ use leptos::{
     reactive::spawn_local,
 };
 use leptos_use::{storage::use_local_storage, use_scroll, UseScrollReturn};
-use shared::{auth::UserInfo, forum::UserForumPost, ws_messages::ServerMsg};
+use shared::{forum::UserForumPost, ws_messages::ServerMsg};
 
 use crate::{
     api::{
         create_post, delete_post, dislike_post, fetch_posts, fetch_posts_by, like_post,
         undo_reaction,
     },
-    app::{AdminToggleCtx, NewPostsContext},
-    hooks::{MyToaster, WebsocketContext},
+    hooks::{MyToaster, NavBarCtx, SettingsCtx, StateCtx, UserResCtx, WebsocketContext},
 };
 
 #[derive(Clone)]
@@ -70,31 +68,48 @@ fn render_mentions(text: &str) -> impl IntoView + use<>
 }
 
 #[component]
-pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
+pub fn Forum() -> impl IntoView
 {
-    let ws = {
-        match use_context::<WebsocketContext>() {
-            Some(ws) => ws,
-            None => {
-                return view! {
-                           <div
-                               class="card stack forum"
-                               class:active=move || visible_forum.get()
-                           >
-                               "Log in to see forum!"
-                           </div>
-                       }.into_any()
+    let navctx = expect_context::<NavBarCtx>();
+    let (visible_forum, _) = navctx.visible_forum;
+    let (authed, _) = expect_context::<StateCtx>().authed;
+    let UserResCtx(userinfo_res) = expect_context::<UserResCtx>();
+
+    view! {
+        <Show
+            when=move || authed.get() && userinfo_res.get().flatten().is_some()
+            fallback=move || view! {
+                <div
+                    class="card stack forum"
+                    class:active=move || visible_forum.get()
+                >
+                    "Log in to see forum!"
+                </div>
             }
-        }
-    };
-    let user_info = expect_context::<UserInfo>();
+        >
+            <ForumAuth />
+        </Show>
+    }
+}
+
+#[component]
+fn ForumAuth() -> impl IntoView
+{
+    let navctx = expect_context::<NavBarCtx>();
+    let (visible_forum, _) = navctx.visible_forum;
+
+    let ws = expect_context::<WebsocketContext>();
+
+    let UserResCtx(user_res) = expect_context::<UserResCtx>();
+    let user_info = user_res.get_untracked().unwrap().unwrap();
+
     let username = Arc::new(user_info.username.clone());
     provide_context(UsernameCtx(username));
 
     let (last_seen, set_last_seen, _) =
         use_local_storage::<i64, FromToStringCodec>("last_seen_post");
 
-    let NewPostsContext(new_posts, set_new_posts) = expect_context::<NewPostsContext>();
+    let (new_posts, set_new_posts) = navctx.new_posts;
 
     let toaster = MyToaster::new();
 
@@ -175,7 +190,6 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
 
         move |_| {
             if loading.get_untracked() || !scrolled_once.get() {
-                log!("Still loading!");
                 return;
             };
             let near = near_top.get();
@@ -184,7 +198,6 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
                 posts_sig.with_untracked(|v| v.first().cloned())
             {
                 if visible_forum.get_untracked() && near && post.id != 1 {
-                    log!("Top scroll effect triggerd!");
                     let post_id = post.id;
                     let toaster = toaster.clone();
                     let set_y = set_y.clone();
@@ -207,13 +220,10 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
 
                                 if let Some(el) = forum_elem.get_untracked() {
                                     let h_after = el.scroll_height() as f64;
-                                    log!("before: {h_before}, after: {h_after}");
                                     set_y(y_coord + h_after - h_before);
-                                    log!("set y to {}", y_coord + h_after - h_before);
 
                                     task::tick().await;
 
-                                    log!("setting loading false!");
                                     set_loading.set(false);
                                 }
                             }
@@ -282,7 +292,7 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
         let y_coord = y.get();
         if let Some(el) = forum_elem.get_untracked() {
             let bottom = (el.scroll_height() - el.client_height()) as f64;
-            let thresh = 3.0 * (bottom / 26.0);
+            let thresh = 2.0 * (bottom / 26.0);
 
             let is_near = (bottom - y_coord) <= thresh;
 
@@ -298,13 +308,12 @@ pub fn Forum(visible_forum: ReadSignal<bool>) -> impl IntoView
             let y_px = y.get(); // tracked on scroll
             let is_near = y_px <= 64.0;
             if near_top.get_untracked() != is_near {
-                log!("setiing near_top to {}", is_near);
                 set_near_top.set(is_near);
             }
         }
     });
 
-    let AdminToggleCtx(is_admin, _) = expect_context::<AdminToggleCtx>();
+    let (is_admin, _) = expect_context::<SettingsCtx>().admin_control;
 
     view! {
         <button

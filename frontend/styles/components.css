@@ -290,7 +290,6 @@
       transform: translateY(0);
       background: color-mix(in oklch, black 20%, var(--brand));
       color: var(--muted);
-      background: transparent;
       box-shadow: none;
     }
   }

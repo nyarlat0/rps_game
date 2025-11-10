@@ -4,21 +4,21 @@ use leptos_use::{
     UseCycleListOptions, UseCycleListReturn,
 };
 
-use crate::app::NewPostsContext;
+use crate::hooks::NavBarCtx;
 
 #[component]
-pub fn NavBar(visible_forum: ReadSignal<bool>,
-              set_visible_forum: WriteSignal<bool>)
-              -> impl IntoView
+pub fn NavBar() -> impl IntoView
 {
+    let navctx = expect_context::<NavBarCtx>();
+    let (visible_forum, set_visible_forum) = navctx.visible_forum;
+    let (new_posts, _) = navctx.new_posts;
+
     let UseColorModeReturn { mode, set_mode, .. } = use_color_mode();
 
     let UseCycleListReturn {next: next_theme, ..} = use_cycle_list_with_options(
         vec![ColorMode::Dark, ColorMode::Light],
         UseCycleListOptions::default().initial_value(Some((mode, set_mode).into())),
     );
-
-    let NewPostsContext(new_posts, _) = expect_context();
 
     view! {
         <nav
