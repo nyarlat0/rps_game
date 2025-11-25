@@ -1,7 +1,5 @@
-mod game_repo;
-mod player_queue;
-mod ws_route;
+mod game_handler;
+pub mod games_actor;
+pub mod players_actor;
 
-pub use game_repo::*;
-pub use player_queue::*;
-pub use ws_route::*;
+pub use game_handler::*;

@@ -35,7 +35,6 @@ pub async fn forum_control(forum_handler: web::Data<ForumHandler>,
                 }
 
                 ForumCmd::FetchPostsBy { start_id, end_id } => {
-                    println!("Fetching request {start_id} - {end_id}");
                     let result = forum_handler.fetch_posts_by(user_id, start_id, end_id)
                                               .await;
                     HttpResponse::Ok().json(result)

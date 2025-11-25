@@ -1,106 +1,35 @@
 use async_trait::async_trait;
-use shared::game::*;
-use std::sync::Arc;
+use shared::game::GameError;
+use uuid::Uuid;
 
-pub struct WsClosed;
-#[derive(Debug)]
-pub struct GameError;
+pub type GameId = u32;
 
+/// Abstract matchmaking queue that can be backed by any async runtime or actor system.
 #[async_trait]
-pub trait WsSession: Send + Sync
+pub trait PlayerQueue: Send + Sync
 {
-    async fn send(&self, msg: &str)
-                  -> Result<(), WsClosed>;
+    async fn contains(&self, user_id: Uuid) -> bool;
+    /// Put a player into the queue. If another player was waiting return their id so a match can start.
+    async fn add(&self, user_id: Uuid) -> Option<Uuid>;
+    async fn try_take(&self) -> Option<Uuid>;
+    async fn remove(&self, user_id: Uuid);
 }
 
-#[derive(Clone)]
-pub struct Player
+/// Core game workflow independent from transport or storage concerns.
+#[async_trait]
+pub trait GameService: Send + Sync
 {
-    pub name: String,
-    pub session: Arc<dyn WsSession>,
-    pub current_move: Option<Move>,
-}
+    type Move: Send + Sync + Clone;
+    type ActiveGame: Send + Sync + Clone;
+    type FinishedGame: Send + Sync + Clone;
 
-pub struct ActiveGame
-{
-    pub players: [Player; 2],
-}
-
-impl ActiveGame
-{
-    pub fn new(player: Player,
-               opponent: Player)
-               -> ActiveGame
-    {
-        ActiveGame { players: [player, opponent] }
-    }
-
-    pub fn set_move(&mut self, player_name: &str, mv: Move)
-    {
-        let [p1, p2] = &mut self.players;
-
-        if p1.name == player_name {
-            p1.current_move.get_or_insert(mv);
-        } else if p2.name == player_name {
-            p2.current_move.get_or_insert(mv);
-        }
-    }
-
-    pub fn has_player(&self, player_name: &str) -> bool
-    {
-        let [p1, p2] = &self.players;
-        p1.name == player_name || p2.name == player_name
-    }
-
-    pub fn get_opp(&self,
-                   player_name: &str)
-                   -> Option<Player>
-    {
-        let [p1, p2] = &self.players;
-
-        if p1.name == player_name {
-            Some(p2.clone())
-        } else if p2.name == player_name {
-            Some(p1.clone())
-        } else {
-            None
-        }
-    }
-
-    pub fn is_ready(&self) -> bool
-    {
-        self.players
-            .iter()
-            .all(|p| p.current_move.is_some())
-    }
-
-    pub fn resolve_for(&self,
-                       player_name: &str)
-                       -> Option<GameInfo>
-    {
-        if !self.is_ready() {
-            return None;
-        }
-        let [p1, p2] = &self.players;
-
-        if p1.name == player_name {
-            Some(GameInfo {
-                you: p1.name.clone(),
-                opponent: p2.name.clone(),
-                your_move: p1.current_move.clone()?,
-                opp_move: p2.current_move.clone()?,
-                result: GameResult::from_moves(p1.current_move.clone()?, p2.current_move.clone()?),
-            })
-        } else if p2.name == player_name {
-            Some(GameInfo {
-                you: p2.name.clone(),
-                opponent: p1.name.clone(),
-                your_move: p2.current_move.clone()?,
-                opp_move: p1.current_move.clone()?,
-                result: GameResult::from_moves(p2.current_move.clone()?, p1.current_move.clone()?),
-            })
-        } else {
-            None
-        }
-    }
+    async fn has_active_game(&self, user_id: Uuid) -> bool;
+    async fn start(&self, user_id: Uuid, opp_id: Uuid) -> GameId;
+    async fn submit_move(&self,
+                         game_id: GameId,
+                         user_id: Uuid,
+                         mv: Self::Move)
+                         -> Result<Option<Self::FinishedGame>, GameError>;
+    async fn opponent_for(&self, game_id: GameId, user_id: Uuid) -> Option<Uuid>;
+    async fn drop_for(&self, game_id: GameId, user_id: Uuid) -> Result<(), GameError>;
 }

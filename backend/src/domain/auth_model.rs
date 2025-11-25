@@ -34,6 +34,7 @@ pub trait AuthService: Send + Sync
     async fn get_user(&self, id: Uuid) -> Result<User, AuthError>;
 }
 
+#[derive(Debug)]
 pub enum AuthError
 {
     InvalidCredentials,

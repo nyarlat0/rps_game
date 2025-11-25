@@ -9,8 +9,7 @@ use uuid::Uuid;
 #[derive(Clone, Default)]
 pub struct UsersActor
 {
-    pub users_online:
-        HashMap<Uuid, Slab<UnboundedSender<ServerMsg>>>,
+    pub users_online: HashMap<Uuid, Slab<UnboundedSender<ServerMsg>>>,
 }
 
 impl UsersActor
@@ -63,20 +62,22 @@ pub struct Broadcast
     pub msg: ServerMsg,
 }
 
+#[derive(Message)]
+#[rtype(result = "bool")]
+pub struct IsOnline
+{
+    pub user_id: Uuid,
+}
+
 // ---- Handlers for UsersActor
 
 impl Handler<Joined> for UsersActor
 {
     type Result = usize;
-    fn handle(&mut self,
-              msg: Joined,
-              _ctx: &mut Self::Context)
-              -> Self::Result
+    fn handle(&mut self, msg: Joined, _ctx: &mut Self::Context) -> Self::Result
     {
         if self.users_online.contains_key(&msg.user_id) {
-            let conns = self.users_online
-                            .get_mut(&msg.user_id)
-                            .unwrap();
+            let conns = self.users_online.get_mut(&msg.user_id).unwrap();
             let conn_id = conns.insert(msg.tx);
             return conn_id;
         } else {
@@ -91,14 +92,9 @@ impl Handler<Joined> for UsersActor
 impl Handler<Disconnected> for UsersActor
 {
     type Result = ();
-    fn handle(&mut self,
-              msg: Disconnected,
-              _ctx: &mut Self::Context)
-              -> Self::Result
+    fn handle(&mut self, msg: Disconnected, _ctx: &mut Self::Context) -> Self::Result
     {
-        let conns = self.users_online
-                        .get_mut(&msg.user_id)
-                        .unwrap();
+        let conns = self.users_online.get_mut(&msg.user_id).unwrap();
         conns.remove(msg.conn_id);
 
         if conns.is_empty() {
@@ -110,10 +106,7 @@ impl Handler<Disconnected> for UsersActor
 impl Handler<GetOnline> for UsersActor
 {
     type Result = usize;
-    fn handle(&mut self,
-              _msg: GetOnline,
-              _ctx: &mut Self::Context)
-              -> Self::Result
+    fn handle(&mut self, _msg: GetOnline, _ctx: &mut Self::Context) -> Self::Result
     {
         self.users_online.len()
     }
@@ -123,14 +116,9 @@ impl Handler<SendToUser> for UsersActor
 {
     type Result = ();
 
-    fn handle(&mut self,
-              msg: SendToUser,
-              _ctx: &mut Self::Context)
-              -> Self::Result
+    fn handle(&mut self, msg: SendToUser, _ctx: &mut Self::Context) -> Self::Result
     {
-        if let Some(slab) =
-            self.users_online.get_mut(&msg.user_id)
-        {
+        if let Some(slab) = self.users_online.get_mut(&msg.user_id) {
             for (_, tx) in slab {
                 tx.send(msg.msg.clone()).ok();
             }
@@ -142,10 +130,7 @@ impl Handler<Broadcast> for UsersActor
 {
     type Result = ();
 
-    fn handle(&mut self,
-              msg: Broadcast,
-              _ctx: &mut Self::Context)
-              -> Self::Result
+    fn handle(&mut self, msg: Broadcast, _ctx: &mut Self::Context) -> Self::Result
     {
         for (_, slab) in self.users_online.iter() {
             for (_, tx) in slab {

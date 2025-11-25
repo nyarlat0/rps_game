@@ -1,12 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-use crate::forum::*;
+use crate::{
+    forum::*,
+    game::GameError,
+    rps_game::{RpsGameReq, RpsGameState},
+};
 
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientMsg
 {
     GetStats,
+    RpsGameMsg(RpsGameReq),
 }
 
 #[non_exhaustive]
@@ -15,7 +20,9 @@ pub enum ServerMsg
 {
     StatsMsg(StatsInfo),
     NewPostMsg(ForumPost),
+    RpsGameMsg(RpsGameState),
     WsErrorMsg(WsError),
+    GameErrorMsg(GameError),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

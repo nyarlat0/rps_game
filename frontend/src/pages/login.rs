@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{
     api::login_user,
     hooks::{MyToaster, UserResCtx},
@@ -18,7 +20,15 @@ pub fn Login() -> impl IntoView
 
     let UserResCtx(info_resource) = expect_context::<UserResCtx>();
 
-    toaster.info("By logging in you argee to our cookie policy.");
+    Effect::new({
+        let toaster = toaster.clone();
+
+        move |_| {
+            let toaster = toaster.clone();
+            set_timeout(move || toaster.info("By logging in you agree to our cookie policy."),
+                        Duration::from_millis(600));
+        }
+    });
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();

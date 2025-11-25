@@ -1,3 +1,6 @@
-nyarlat.org {
+{
+	auto_https off
+}
+:3000 {
 	reverse_proxy localhost:8081
 }
