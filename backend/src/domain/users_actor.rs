@@ -10,6 +10,7 @@ use uuid::Uuid;
 pub struct UsersActor
 {
     pub users_online: HashMap<Uuid, Slab<UnboundedSender<ServerMsg>>>,
+    pub user_names: HashMap<Uuid, String>,
 }
 
 impl UsersActor
@@ -33,6 +34,7 @@ pub struct Joined
 {
     pub tx: UnboundedSender<ServerMsg>,
     pub user_id: Uuid,
+    pub username: String,
 }
 
 #[derive(Message)]
@@ -69,6 +71,13 @@ pub struct IsOnline
     pub user_id: Uuid,
 }
 
+#[derive(Message)]
+#[rtype(result = "Option<String>")]
+pub struct GetName
+{
+    pub user_id: Uuid,
+}
+
 // ---- Handlers for UsersActor
 
 impl Handler<Joined> for UsersActor
@@ -83,7 +92,10 @@ impl Handler<Joined> for UsersActor
         } else {
             let mut conns = Slab::new();
             let conn_id = conns.insert(msg.tx);
+
             self.users_online.insert(msg.user_id, conns);
+            self.user_names.insert(msg.user_id, msg.username);
+
             return conn_id;
         }
     }
@@ -99,6 +111,7 @@ impl Handler<Disconnected> for UsersActor
 
         if conns.is_empty() {
             self.users_online.remove(&msg.user_id);
+            self.user_names.remove(&msg.user_id);
         };
     }
 }
@@ -137,5 +150,15 @@ impl Handler<Broadcast> for UsersActor
                 tx.send(msg.msg.clone()).ok();
             }
         }
+    }
+}
+
+impl Handler<GetName> for UsersActor
+{
+    type Result = Option<String>;
+
+    fn handle(&mut self, msg: GetName, _ctx: &mut Self::Context) -> Self::Result
+    {
+        self.user_names.get(&msg.user_id).cloned()
     }
 }

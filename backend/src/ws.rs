@@ -2,21 +2,21 @@ use actix::prelude::*;
 use actix_web::{get, rt, web, HttpRequest, HttpResponse, Responder};
 use actix_ws::AggregatedMessage;
 use futures_util::StreamExt;
-use shared::game::GameReq;
-use shared::ws_messages::*;
+use shared::{rps_game::RpsGameReq, ws_messages::*};
 use tokio::sync::mpsc;
 use tokio::time::{interval, Duration, Instant, MissedTickBehavior};
 use uuid::Uuid;
 
 use crate::application::auth_handler::AuthHandler;
+use crate::application::game_handler::GameHandler;
+use crate::domain::rps_model::RpsGame;
 use crate::domain::users_actor::{self, UsersActor};
 use crate::infrastructure::auth::extract_id;
-use crate::infrastructure::game::GameHandler;
 
 #[get("/ws")]
 pub async fn ws_route(req: HttpRequest,
                       body: web::Payload,
-                      game_handler: web::Data<GameHandler>,
+                      rps_handler: web::Data<GameHandler<RpsGame>>,
                       users_actor: web::Data<Addr<UsersActor>>,
                       auth_handler: web::Data<AuthHandler>)
                       -> actix_web::Result<impl Responder>
@@ -28,12 +28,14 @@ pub async fn ws_route(req: HttpRequest,
         }
     };
 
-    let _userinfo = match auth_handler.get_userinfo(user_id).await {
+    let userinfo = match auth_handler.get_userinfo(user_id).await {
         Ok(info) => info,
         Err(_) => {
             return Ok(HttpResponse::Unauthorized().body("Not logged in!"));
         }
     };
+
+    let username = userinfo.username;
 
     let (response, mut session, stream) = actix_ws::handle(&req, body)?;
 
@@ -43,9 +45,13 @@ pub async fn ws_route(req: HttpRequest,
 
     let (tx, mut rx) = mpsc::unbounded_channel::<ServerMsg>();
 
-    let conn_id = users_actor.send(users_actor::Joined { tx, user_id })
+    let conn_id = users_actor.send(users_actor::Joined { tx,
+                                                         user_id,
+                                                         username })
                              .await
                              .unwrap();
+
+    let gh = rps_handler.clone();
 
     rt::spawn(async move {
         let mut hb = interval(Duration::from_secs(10));
@@ -53,9 +59,6 @@ pub async fn ws_route(req: HttpRequest,
 
         let mut last_pong = Instant::now();
         const CLIENT_TIMEOUT: Duration = Duration::from_secs(20);
-
-        let mut current_game = None::<usize>;
-        let mut current_opp = None::<Uuid>;
 
         loop {
             tokio::select! {
@@ -84,11 +87,9 @@ pub async fn ws_route(req: HttpRequest,
                                 AggregatedMessage::Text(text) => {
                                     if !handle_client_text(
                                         text.to_string(),
-                                        &mut current_opp,
-                                        &mut current_game,
                                         user_id,
                                         &users_actor,
-                                        &game_handler,
+                                        &gh,
                                         &mut session)
                                         .await {break;}
                                 },
@@ -111,18 +112,16 @@ pub async fn ws_route(req: HttpRequest,
         }
 
         users_actor.do_send(users_actor::Disconnected { conn_id, user_id });
-        let _ = session.close(None).await;
+        // Drop from queue / game if still present.
     });
 
     return Ok(response);
 }
 
 async fn handle_client_text(text: String,
-                            current_opp: &mut Option<Uuid>,
-                            current_game: &mut Option<usize>,
                             user_id: Uuid,
                             users_actor: &Addr<UsersActor>,
-                            game_handler: &GameHandler,
+                            rps_handler: &GameHandler<RpsGame>,
                             session: &mut actix_ws::Session)
                             -> bool
 {
@@ -143,21 +142,36 @@ async fn handle_client_text(text: String,
             let out = serde_json::to_string(&serv_msg).unwrap();
             session.text(out).await.is_ok()
         }
-        ClientMsg::GameMsg(game_req) => match game_req {
-            GameReq::Start => {
-                if let Some((game_id, opp_id)) = game_handler.start(user_id).await {
-                    *current_game = Some(game_id);
-                    *current_opp = Some(opp_id);
-
-                    users_actor.do_send(users_actor::SendToUser {
-                        user_id: opp_id,
-                        msg: ServerMsg::InternalGameMsg((game_id, opp_id))
-                    });
+        ClientMsg::RpsGameMsg(game_req) => match game_req {
+            RpsGameReq::Start => {
+                if let Err(err) = rps_handler.join(user_id).await {
+                    let msg = ServerMsg::GameErrorMsg(err);
+                    let out = serde_json::to_string(&msg).unwrap();
+                    session.text(out).await.is_ok()
+                } else {
+                    true
                 }
-                true
             }
-            GameReq::Submit(mv) => true,
-            _ => true,
+
+            RpsGameReq::Submit(mv) => {
+                if let Err(err) = rps_handler.submit(user_id, mv).await {
+                    let msg = ServerMsg::GameErrorMsg(err);
+                    let out = serde_json::to_string(&msg).unwrap();
+                    session.text(out).await.is_ok()
+                } else {
+                    true
+                }
+            }
+
+            RpsGameReq::Leave => {
+                if let Err(err) = rps_handler.leave(user_id).await {
+                    let msg = ServerMsg::GameErrorMsg(err);
+                    let out = serde_json::to_string(&msg).unwrap();
+                    session.text(out).await.is_ok()
+                } else {
+                    true
+                }
+            }
         },
         _ => true,
     }

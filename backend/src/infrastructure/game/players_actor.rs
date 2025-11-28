@@ -32,8 +32,19 @@ pub struct Join
 }
 
 #[derive(Message)]
+#[rtype(result = "Option<Uuid>")]
+pub struct TryTake;
+
+#[derive(Message)]
 #[rtype(result = "()")]
 pub struct Disconnected
+{
+    pub user_id: Uuid,
+}
+
+#[derive(Message)]
+#[rtype(result = "bool")]
+pub struct Contains
 {
     pub user_id: Uuid,
 }
@@ -65,5 +76,25 @@ impl Handler<Disconnected> for PlayersQueueActor
         if let Some(pos) = self.players.iter().position(|x| *x == msg.user_id) {
             self.players.remove(pos);
         }
+    }
+}
+
+impl Handler<TryTake> for PlayersQueueActor
+{
+    type Result = Option<Uuid>;
+
+    fn handle(&mut self, _msg: TryTake, _ctx: &mut Self::Context) -> Self::Result
+    {
+        self.players.pop_front()
+    }
+}
+
+impl Handler<Contains> for PlayersQueueActor
+{
+    type Result = bool;
+
+    fn handle(&mut self, msg: Contains, _ctx: &mut Self::Context) -> Self::Result
+    {
+        self.players.contains(&msg.user_id)
     }
 }

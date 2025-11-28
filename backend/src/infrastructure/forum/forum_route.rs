@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse, Responder, post, web};
 use shared::forum::*;
 use shared::ws_messages::ServerMsg;
 
@@ -9,13 +9,13 @@ use crate::domain::users_actor::{Broadcast, UsersActor};
 use crate::infrastructure::auth::extract_id;
 
 #[post("/forum")]
-pub async fn forum_control(forum_handler: web::Data<ForumHandler>,
-                           auth_handler: web::Data<AuthHandler>,
-                           users_actor: web::Data<Addr<UsersActor>>,
-                           req: HttpRequest,
-                           forum_cmd: web::Json<ForumCmd>)
-                           -> impl Responder
-{
+pub async fn forum_control(
+    forum_handler: web::Data<ForumHandler>,
+    auth_handler: web::Data<AuthHandler>,
+    users_actor: web::Data<Addr<UsersActor>>,
+    req: HttpRequest,
+    forum_cmd: web::Json<ForumCmd>,
+) -> impl Responder {
     if let Some(user_id) = extract_id(&req) {
         match auth_handler.get_user(user_id).await {
             Ok(user) => match forum_cmd.into_inner() {
@@ -23,8 +23,9 @@ pub async fn forum_control(forum_handler: web::Data<ForumHandler>,
                     let result = forum_handler.make_post(user, &post_contents).await;
 
                     if let Ok(post) = result.as_ref() {
-                        users_actor.do_send(Broadcast { msg:
-                                                            ServerMsg::NewPostMsg(post.clone()) });
+                        users_actor.do_send(Broadcast {
+                            msg: ServerMsg::NewPostMsg(post.clone()),
+                        });
                     };
                     HttpResponse::Ok().json(result)
                 }
@@ -35,8 +36,9 @@ pub async fn forum_control(forum_handler: web::Data<ForumHandler>,
                 }
 
                 ForumCmd::FetchPostsBy { start_id, end_id } => {
-                    let result = forum_handler.fetch_posts_by(user_id, start_id, end_id)
-                                              .await;
+                    let result = forum_handler
+                        .fetch_posts_by(user_id, start_id, end_id)
+                        .await;
                     HttpResponse::Ok().json(result)
                 }
 

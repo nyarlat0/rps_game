@@ -1,138 +1,143 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use shared::forum::*;
-use sqlx::PgPool;
+use sqlx::{query, query_as, FromRow, PgPool};
 use uuid::Uuid;
 
-use crate::domain::{
-    auth_model::User, forum_model::ForumService,
-};
+use crate::domain::{auth_model::User, forum_model::ForumService};
 
-pub struct PsqlForumService
-{
+pub struct PsqlForumService {
     pub db: PgPool,
 }
 
+#[derive(FromRow)]
+struct InsertedPost {
+    id: i64,
+    created_at: DateTime<Utc>,
+    like_count: i32,
+    dislike_count: i32,
+}
+
+#[derive(FromRow)]
+struct DbPost {
+    id: i64,
+    created_at: DateTime<Utc>,
+    author: String,
+    contents: String,
+    likes: i32,
+    dislikes: i32,
+    liked: bool,
+    disliked: bool,
+}
+
 #[async_trait]
-impl ForumService for PsqlForumService
-{
-    async fn make_post(&self,
-                       user: User,
-                       post_contents: &str)
-                       -> Result<ForumPost, ForumError>
-    {
-        let rec = sqlx::query!(
-                               r#"
-            INSERT INTO posts (author_id, body)
-            VALUES ($1, $2)
-            RETURNING *
+impl ForumService for PsqlForumService {
+    async fn make_post(&self, user: User, post_contents: &str) -> Result<ForumPost, ForumError> {
+        let rec = query_as::<_, InsertedPost>(
+            r#"
+                INSERT INTO posts (author_id, body)
+                VALUES ($1, $2)
+                RETURNING id, created_at, like_count, dislike_count
             "#,
-                               user.id,
-                               post_contents
-        ).fetch_one(&self.db)
-                  .await
-                  .map_err(|_| ForumError::DbError)?;
+        )
+        .bind(user.id)
+        .bind(post_contents)
+        .fetch_one(&self.db)
+        .await
+        .map_err(|_| ForumError::DbError)?;
 
-        Ok(ForumPost { id: rec.id,
-                       created_at: rec.created_at,
-                       author: user.name,
-                       contents:
-                           post_contents.to_string(),
-                       likes: rec.like_count,
-                       dislikes: rec.dislike_count })
+        Ok(ForumPost {
+            id: rec.id,
+            created_at: rec.created_at,
+            author: user.name,
+            contents: post_contents.to_string(),
+            likes: rec.like_count,
+            dislikes: rec.dislike_count,
+        })
     }
-    async fn delete_post(&self,
-                         post_id: i64)
-                         -> Result<(), ForumError>
-    {
-        sqlx::query!("DELETE FROM posts WHERE id = $1",
-                     post_id).execute(&self.db)
-                             .await
-                             .map_err(|_| {
-                                 ForumError::WrongPostId
-                             })?;
-        Ok(())
-    }
-
-    async fn like_post(&self,
-                       user_id: Uuid,
-                       post_id: i64)
-                       -> Result<(), ForumError>
-    {
-        sqlx::query!(
-        r#"
-        INSERT INTO post_reactions (post_id, user_id, reaction)
-        VALUES ($1, $2, 1)
-        ON CONFLICT (post_id, user_id) DO UPDATE
-        SET reaction = 1;
-        "#, post_id, user_id).execute(&self.db)
+    async fn delete_post(&self, post_id: i64) -> Result<(), ForumError> {
+        query("DELETE FROM posts WHERE id = $1")
+            .bind(post_id)
+            .execute(&self.db)
             .await
             .map_err(|_| ForumError::WrongPostId)?;
-
-        Ok(())
-    }
-    async fn dislike_post(&self,
-                          user_id: Uuid,
-                          post_id: i64)
-                          -> Result<(), ForumError>
-    {
-        sqlx::query!(
-        r#"
-        INSERT INTO post_reactions (post_id, user_id, reaction)
-        VALUES ($1, $2, -1)
-        ON CONFLICT (post_id, user_id) DO UPDATE
-        SET reaction = -1;
-        "#, post_id, user_id).execute(&self.db)
-            .await
-            .map_err(|_| ForumError::WrongPostId)?;
-
-        Ok(())
-    }
-    async fn undo_reaction(&self,
-                           user_id: Uuid,
-                           post_id: i64)
-                           -> Result<(), ForumError>
-    {
-        sqlx::query!(
-            "DELETE FROM post_reactions WHERE user_id = $1 AND post_id = $2",
-            user_id, post_id).execute(&self.db)
-            .await
-            .map_err(|_| ForumError::WrongPostId)?;
-
         Ok(())
     }
 
-    async fn fetch_posts(
-        &self,
-        user_id: Uuid)
-        -> Result<Vec<UserForumPost>, ForumError>
-    {
-        let rows = sqlx::query!(
-                                r#"
-        SELECT
-          p.id,
-          p.created_at,
-          u.name       AS author,
-          p.body           AS contents,
-          p.like_count     AS likes,
-          p.dislike_count  AS dislikes,
-          COALESCE(pr.reaction = 1,  false) AS "liked!",
-          COALESCE(pr.reaction = -1, false) AS "disliked!"
-        FROM posts p
-        JOIN users u ON u.id = p.author_id
-        LEFT JOIN post_reactions pr
-          ON pr.post_id = p.id AND pr.user_id = $1
-        ORDER BY p.id DESC
-        LIMIT 25
-        "#,
-                                user_id
-        ).fetch_all(&self.db)
-                   .await
-                   .map_err(|_| ForumError::DbError)?;
+    async fn like_post(&self, user_id: Uuid, post_id: i64) -> Result<(), ForumError> {
+        query(
+            r#"
+            INSERT INTO post_reactions (post_id, user_id, reaction)
+            VALUES ($1, $2, 1)
+            ON CONFLICT (post_id, user_id) DO UPDATE
+            SET reaction = 1;
+            "#,
+        )
+        .bind(post_id)
+        .bind(user_id)
+        .execute(&self.db)
+        .await
+        .map_err(|_| ForumError::WrongPostId)?;
 
-        let mut out: Vec<UserForumPost> =
-            rows.into_iter()
-                .map(|r| {
-                    UserForumPost {
+        Ok(())
+    }
+    async fn dislike_post(&self, user_id: Uuid, post_id: i64) -> Result<(), ForumError> {
+        query(
+            r#"
+            INSERT INTO post_reactions (post_id, user_id, reaction)
+            VALUES ($1, $2, -1)
+            ON CONFLICT (post_id, user_id) DO UPDATE
+            SET reaction = -1;
+            "#,
+        )
+        .bind(post_id)
+        .bind(user_id)
+        .execute(&self.db)
+        .await
+        .map_err(|_| ForumError::WrongPostId)?;
+
+        Ok(())
+    }
+    async fn undo_reaction(&self, user_id: Uuid, post_id: i64) -> Result<(), ForumError> {
+        query("DELETE FROM post_reactions WHERE user_id = $1 AND post_id = $2")
+        .bind(user_id)
+        .bind(post_id)
+        .execute(&self.db)
+        .await
+        .map_err(|_| ForumError::WrongPostId)?;
+
+        Ok(())
+    }
+
+    async fn fetch_posts(&self, user_id: Uuid) -> Result<Vec<UserForumPost>, ForumError> {
+        let rows = query_as::<_, DbPost>(
+            r#"
+                SELECT
+                  p.id,
+                  p.created_at,
+                  u.name       AS author,
+                  p.body           AS contents,
+                  p.like_count     AS likes,
+                  p.dislike_count  AS dislikes,
+                  COALESCE(pr.reaction = 1,  false) AS liked,
+                  COALESCE(pr.reaction = -1, false) AS disliked
+                FROM posts p
+                JOIN users u ON u.id = p.author_id
+                LEFT JOIN post_reactions pr
+                  ON pr.post_id = p.id AND pr.user_id = $1
+                ORDER BY p.id DESC
+                LIMIT 25
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&self.db)
+        .await
+        .map_err(|_| ForumError::DbError)?;
+
+        let mut out: Vec<UserForumPost> = rows
+            .into_iter()
+            .map(|r| {
+                UserForumPost {
                     post: ForumPost {
                         id: r.id,
                         created_at: r.created_at, // timestamptz -> DateTime<Utc>
@@ -144,8 +149,8 @@ impl ForumService for PsqlForumService
                     liked: r.liked,
                     disliked: r.disliked,
                 }
-                })
-                .collect::<Vec<UserForumPost>>();
+            })
+            .collect::<Vec<UserForumPost>>();
         out.reverse();
 
         Ok(out)
@@ -155,56 +160,55 @@ impl ForumService for PsqlForumService
         &self,
         user_id: Uuid,
         start_id: i64,
-        end_id: i64)
-        -> Result<Vec<UserForumPost>, ForumError>
-    {
+        end_id: i64,
+    ) -> Result<Vec<UserForumPost>, ForumError> {
         let (lo, hi) = if start_id <= end_id {
             (start_id, end_id)
         } else {
             (end_id, start_id)
         };
 
-        let rows = sqlx::query!(
-                                r#"
-        SELECT
-          p.id,
-          p.created_at,
-          u.name       AS author,
-          p.body           AS contents,
-          p.like_count     AS likes,
-          p.dislike_count  AS dislikes,
-          COALESCE(pr.reaction = 1,  false) AS "liked!",
-          COALESCE(pr.reaction = -1, false) AS "disliked!"
-        FROM posts p
-        JOIN users u ON u.id = p.author_id
-        LEFT JOIN post_reactions pr
-          ON pr.post_id = p.id AND pr.user_id = $1
-        WHERE p.id BETWEEN $2 AND $3
-        ORDER BY p.id ASC
-        "#,
-                                user_id,
-                                lo,
-                                hi
-        ).fetch_all(&self.db)
-                   .await
-                   .map_err(|_| ForumError::DbError)?;
+        let rows = query_as::<_, DbPost>(
+            r#"
+                SELECT
+                  p.id,
+                  p.created_at,
+                  u.name       AS author,
+                  p.body           AS contents,
+                  p.like_count     AS likes,
+                  p.dislike_count  AS dislikes,
+                  COALESCE(pr.reaction = 1,  false) AS liked,
+                  COALESCE(pr.reaction = -1, false) AS disliked
+                FROM posts p
+                JOIN users u ON u.id = p.author_id
+                LEFT JOIN post_reactions pr
+                  ON pr.post_id = p.id AND pr.user_id = $1
+                WHERE p.id BETWEEN $2 AND $3
+                ORDER BY p.id ASC
+            "#,
+        )
+        .bind(user_id)
+        .bind(lo)
+        .bind(hi)
+        .fetch_all(&self.db)
+        .await
+        .map_err(|_| ForumError::DbError)?;
 
-        let out = rows.into_iter()
-                      .map(|r| {
-                          UserForumPost {
-                    post: ForumPost {
-                        id: r.id,
-                        created_at: r.created_at,
-                        author: r.author,
-                        contents: r.contents,
-                        likes: r.likes,
-                        dislikes: r.dislikes,
-                    },
-                    liked: r.liked,
-                    disliked: r.disliked,
-                }
-                      })
-                      .collect();
+        let out = rows
+            .into_iter()
+            .map(|r| UserForumPost {
+                post: ForumPost {
+                    id: r.id,
+                    created_at: r.created_at,
+                    author: r.author,
+                    contents: r.contents,
+                    likes: r.likes,
+                    dislikes: r.dislikes,
+                },
+                liked: r.liked,
+                disliked: r.disliked,
+            })
+            .collect();
 
         Ok(out)
     }

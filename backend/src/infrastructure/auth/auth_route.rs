@@ -1,43 +1,34 @@
-use actix_web::cookie::{time::Duration, Cookie, SameSite};
-use actix_web::{
-    get, post, web, HttpRequest, HttpResponse, Responder,
-};
+use actix_web::cookie::{Cookie, SameSite, time::Duration};
+use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web};
 
 use crate::application::auth_handler::*;
 use crate::domain::auth_model::AuthError;
 use crate::infrastructure::auth::extract_id;
 use shared::auth::*;
 
-pub fn configure_auth(cfg: &mut web::ServiceConfig)
-{
-    cfg.service(web::scope("/auth").service(register)
-                                   .service(login)
-                                   .service(logout)
-                                   .service(whoami));
+pub fn configure_auth(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/auth")
+            .service(register)
+            .service(login)
+            .service(logout)
+            .service(whoami),
+    );
 }
 
 #[post("/register")]
-async fn register(handler: web::Data<AuthHandler>,
-                  form: web::Json<Credentials>)
-                  -> impl Responder
-{
+async fn register(handler: web::Data<AuthHandler>, form: web::Json<Credentials>) -> impl Responder {
     match handler.register_user(form.into_inner()).await {
-        Ok(_) => HttpResponse::Ok()
-            .body("User registered!"),
+        Ok(_) => HttpResponse::Ok().body("User registered!"),
 
-        Err(AuthError::AlreadyExists) => HttpResponse::Conflict()
-            .body("Username already taken!"),
+        Err(AuthError::AlreadyExists) => HttpResponse::Conflict().body("Username already taken!"),
 
-        Err(_) => HttpResponse::InternalServerError()
-            .body("Registration failed."),
+        Err(_) => HttpResponse::InternalServerError().body("Registration failed."),
     }
 }
 
 #[post("/login")]
-async fn login(handler: web::Data<AuthHandler>,
-               creds: web::Json<Credentials>)
-               -> impl Responder
-{
+async fn login(handler: web::Data<AuthHandler>, creds: web::Json<Credentials>) -> impl Responder {
     match handler.login_user(creds.into_inner()).await {
         Ok(token) => {
             let cookie = Cookie::build("auth_token", token)
@@ -54,20 +45,15 @@ async fn login(handler: web::Data<AuthHandler>,
         }
 
         Err(AuthError::InvalidCredentials) => {
-            HttpResponse::Unauthorized()
-                .body("Wrong username or password!")
+            HttpResponse::Unauthorized().body("Wrong username or password!")
         }
 
-        Err(_) => {
-            HttpResponse::InternalServerError()
-                .body("Login failed.")
-        }
+        Err(_) => HttpResponse::InternalServerError().body("Login failed."),
     }
 }
 
 #[post("/logout")]
-async fn logout() -> impl Responder
-{
+async fn logout() -> impl Responder {
     let expired = Cookie::build("auth_token", "")
         .path("/")
         .http_only(true)
@@ -76,30 +62,23 @@ async fn logout() -> impl Responder
         .max_age(Duration::seconds(0)) // Expire immediately
         .finish();
 
-    HttpResponse::SeeOther().append_header(("Location",
-                                            "/"))
-                            .cookie(expired)
-                            .finish()
+    HttpResponse::SeeOther()
+        .append_header(("Location", "/"))
+        .cookie(expired)
+        .finish()
 }
 
 #[get("/me")]
-async fn whoami(handler: web::Data<AuthHandler>,
-                req: HttpRequest)
-                -> impl Responder
-{
+async fn whoami(handler: web::Data<AuthHandler>, req: HttpRequest) -> impl Responder {
     if let Some(id) = extract_id(&req) {
         match handler.get_userinfo(id).await {
             Ok(info) => HttpResponse::Ok().json(info),
 
             Err(AuthError::InvalidCredentials) => {
-                HttpResponse::Unauthorized()
-                    .body("Wrong username or password!")
+                HttpResponse::Unauthorized().body("Wrong username or password!")
             }
 
-            Err(_) => {
-                HttpResponse::InternalServerError()
-                    .body("Login failed.")
-            }
+            Err(_) => HttpResponse::InternalServerError().body("Login failed."),
         }
     } else {
         HttpResponse::Unauthorized().body("Not logged in")

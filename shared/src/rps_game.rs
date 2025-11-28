@@ -15,6 +15,7 @@ pub enum RpsGameReq
 {
     Start,
     Submit(RpsMove),
+    Leave,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -28,19 +29,12 @@ pub struct RpsGameInfo
 pub enum RpsGameState
 {
     Waiting,
-    Matched
+    Game
     {
-        game_id: u32,
-        opponent: String,
-    },
-    OppSubmitted,
-    Submitted
-    {
-        opponent: String,
-        your_move: RpsMove,
+        players: [String; 2],
+        submitted: [bool; 2],
     },
     Finished(RpsGameInfo),
-    Disconnected,
 }
 
 impl RpsGameInfo

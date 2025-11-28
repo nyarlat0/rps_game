@@ -11,9 +11,9 @@ pub mod domain;
 pub mod infrastructure;
 pub mod ws;
 
+use crate::application::game_handler::GameHandler;
 use crate::application::{auth_handler::*, forum_handler::*};
-use crate::domain::games_actor::GamesActor;
-use crate::domain::players_actor::PlayersQueueActor;
+use crate::domain::rps_model::RpsGame;
 use crate::domain::users_actor::UsersActor;
 use crate::infrastructure::{auth::*, forum::*, game::*};
 use crate::ws::ws_route;
@@ -39,18 +39,23 @@ async fn main() -> std::io::Result<()>
     let forum_service = Arc::new(PsqlForumService { db: pool.clone() });
     let forum_handler = web::Data::new(ForumHandler { forum_service });
 
-    let player_qu = PlayersQueueActor::new().start();
-    let games_actor = GamesActor::new().start();
-    let game_handler = web::Data::new(GameHandler { player_qu,
-                                                    games_actor });
+    let users_actor = UsersActor::new().start();
+    let sh_users_actor = web::Data::new(users_actor.clone());
 
-    let users_actor = web::Data::new(UsersActor::new().start());
+    let players_actor = PlayersQueueActor::new().start();
+    let rps_player_qu = ActorPlayerQueue::new(players_actor);
+    let rps_service = InMemoryGameService::<RpsGame>::new();
+    let notifier = WsGameNotifier::new(users_actor);
+
+    let rps_game_handler = web::Data::new(GameHandler::<RpsGame>::new(Arc::new(rps_service),
+                                                                      Arc::new(rps_player_qu),
+                                                                      Arc::new(notifier)));
 
     HttpServer::new(move || {
         App::new().app_data(auth_handler.clone())
                   .app_data(forum_handler.clone())
-                  .app_data(users_actor.clone())
-                  .app_data(game_handler.clone())
+                  .app_data(sh_users_actor.clone())
+                  .app_data(rps_game_handler.clone())
                   .service(web::scope("/api").configure(configure_auth)
                                              .service(ws_route)
                                              .service(forum_control))

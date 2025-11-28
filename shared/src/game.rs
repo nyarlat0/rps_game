@@ -13,6 +13,8 @@ pub enum GameError
 {
     NotFound,
     InvalidMove,
+    Disconnected,
+    AlreadyInGame,
 }
 
 impl GameResult
