@@ -322,7 +322,7 @@ fn ForumAuth() -> impl IntoView
             on:click=move |_| forum_res.refetch()
         >
             <svg class="icon forum-reaction-icon" aria-hidden="true">
-                <use href="icons.svg#rotate-ccw"></use>
+                <use href="/icons.svg#rotate-ccw"></use>
             </svg>
         </button>
         <button
@@ -342,7 +342,7 @@ fn ForumAuth() -> impl IntoView
             }
         >
             <svg class="icon forum-scroll-icon" aria-hidden="true">
-                <use href="icons.svg#arrow-down"></use>
+                <use href="/icons.svg#arrow-down"></use>
             </svg>
         </button>
         <div
@@ -545,7 +545,7 @@ fn PostRow(upost: UserForumPost,
                     on:click=move |_| toggle(Reaction::Like)
                 >
                     <svg class="icon forum-reaction-icon" aria-hidden="true">
-                        <use href="icons.svg#thumbs-up"></use>
+                        <use href="/icons.svg#thumbs-up"></use>
                     </svg>
                     {move || likes.get()}
                 </button>
@@ -560,7 +560,7 @@ fn PostRow(upost: UserForumPost,
                     on:click=move |_| toggle(Reaction::Dislike)
                 >
                     <svg class="icon forum-reaction-icon" aria-hidden="true">
-                        <use href="icons.svg#thumbs-down"></use>
+                        <use href="/icons.svg#thumbs-down"></use>
                     </svg>
                     {move || dislikes.get()}
                 </button>
@@ -575,7 +575,7 @@ fn PostRow(upost: UserForumPost,
             on:click=move |_| {delete_btn()}
             >
                 <svg class="icon forum-reaction-icon" aria-hidden="true">
-                        <use href="icons.svg#trash-2"></use>
+                        <use href="/icons.svg#trash-2"></use>
                 </svg>
             </button>
 

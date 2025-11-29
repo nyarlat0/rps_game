@@ -176,6 +176,18 @@
 
   :where(.fill-page) {
     min-inline-size: min(80dvw, 35ch);
+    max-inline-size: min(80dvw, 35ch);
+    min-height: min(80dvh, 45ch);
   }
+
+  .el-hide {
+    display: none;
+  }
+
+  #settings {
+    min-height: 0;
+    max-inline-size: min(60ch, calc(100dvi - 2rem));
+  }
+
 }
 

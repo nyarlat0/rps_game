@@ -28,11 +28,11 @@ pub fn NavBar() -> impl IntoView
             <a href="/">
             { move || match mode.get() {
                 ColorMode::Dark => view! {
-                    <img class="icon" alt="Logo" src="images/logo_light.png"/>
+                    <img class="icon" alt="Logo" src="/images/logo_light.png"/>
                 }.into_any(),
 
                 ColorMode::Light => view! {
-                    <img class="icon" alt="Logo" src="images/logo_dark.png"/>
+                    <img class="icon" alt="Logo" src="/images/logo_dark.png"/>
                 }.into_any(),
 
                 _ => view! {}.into_any(),
@@ -53,13 +53,13 @@ pub fn NavBar() -> impl IntoView
             { move || match mode.get() {
                 ColorMode::Dark => view! {
                     <svg class="icon" alt="Toggle theme">
-                        <use href="icons.svg#sun"></use>
+                        <use href="/icons.svg#sun"></use>
                     </svg>
                 }.into_any(),
 
                 ColorMode::Light => view! {
                     <svg class="icon" alt="Toggle theme">
-                        <use href="icons.svg#moon"></use>
+                        <use href="/icons.svg#moon"></use>
                     </svg>
                 }.into_any(),
 
@@ -76,7 +76,7 @@ pub fn NavBar() -> impl IntoView
                 on:click=move |_| set_visible_forum.update(|value| *value = !*value)
             >
                 <svg class="icon" alt="Toggle forum">
-                    <use href="icons.svg#message-square"></use>
+                    <use href="/icons.svg#message-square"></use>
                 </svg>
             </button>
             <button
@@ -86,7 +86,7 @@ pub fn NavBar() -> impl IntoView
                 popovertarget="settings"
             >
                 <svg class="icon" alt="Toggle settings">
-                    <use href="icons.svg#settings"></use>
+                    <use href="/icons.svg#settings"></use>
                 </svg>
             </button>
             </div>

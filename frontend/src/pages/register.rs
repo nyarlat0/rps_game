@@ -15,9 +15,8 @@ pub fn Register() -> impl IntoView
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
-        let creds =
-            Credentials { username: username.get(),
-                          password: password.get() };
+        let creds = Credentials { username: username.get(),
+                                  password: password.get() };
 
         let toaster = toaster.clone();
         let navigate = navigate.clone();
@@ -65,7 +64,7 @@ pub fn Register() -> impl IntoView
                 }
             />
             </div>
-            <div class="stack" style="--stack-gap: var(--s2)">
+            <div class="stack" style="--stack-gap: var(--s2); margin-top: auto;">
             <button type="submit">
                 "Register"
             </button>
@@ -73,10 +72,10 @@ pub fn Register() -> impl IntoView
 
             <div class="stack">
             <div class="grid">
-            <a href="/login" class="button">
+            <a href="/login" class="button secondary">
                 "Login"
             </a>
-            <a href="/" class="button">
+            <a href="/" class="button secondary">
                 "Home"
             </a>
             </div>

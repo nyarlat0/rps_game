@@ -52,7 +52,7 @@ pub fn AuthHome() -> impl IntoView
                 .format("%d.%m.%Y %H:%M").to_string()
         }</p>
 
-        <a href = "/game" class="button" style ="margin-block-start: var(--s1);">
+        <a href = "/games" class="button" style ="margin-block-start: var(--s1); margin-top: auto;">
             "Play"
         </a>
 
@@ -74,7 +74,7 @@ pub fn UnAuthHome() -> impl IntoView
 
         <h2>"Please log in or register"</h2>
 
-        <a href="/login" class="button">
+        <a href="/login" class="button" style="margin-top: auto;">
             "Login"
         </a>
 

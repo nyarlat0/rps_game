@@ -90,6 +90,11 @@ impl<G> GameHandler<G> where G: ActiveGame
 
             self.notifier.notify(user_id, msg.clone()).await;
             self.notifier.notify(opp_id, msg).await;
+        } else {
+            let msg = curr_game.into_msg(user_id, &player_name, &opp_name);
+
+            self.notifier.notify(user_id, msg.clone()).await;
+            self.notifier.notify(opp_id, msg).await;
         }
 
         Ok(())

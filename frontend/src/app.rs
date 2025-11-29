@@ -111,7 +111,8 @@ fn UnAuthView() -> impl IntoView
         <Routes transition=true fallback=|| "Not found.">
             <Route path=path!("/login") view=Login />
             <Route path=path!("/register") view=Register />
-            <Route path=path!("/*any") view=UnAuthHome />
+            <Route path=path!("/") view=UnAuthHome />
+            <Route path=path!("/*any") view=Login />
         </Routes>
     }
 }
@@ -136,7 +137,10 @@ fn AuthView(user_info: UserInfo) -> impl IntoView
             <Route path=path!("/") view=AuthHome/>
             <Route path=path!("/login") view=|| {view! {<Redirect path="/" />}} />
             <Route path=path!("/register") view=|| {view! {<Redirect path="/" />}} />
-            <Route path=path!("/game") view=Game />
+            <ParentRoute path=path!("/games") view=|| {view! {<Outlet />}} >
+                <Route path=path!("") view=GamesHub />
+                <Route path=path!("rps") view=RpsGame />
+            </ParentRoute>
         </Routes>
     }
 }

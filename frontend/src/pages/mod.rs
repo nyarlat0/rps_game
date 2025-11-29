@@ -1,8 +1,10 @@
-mod game;
+mod games_hub;
 mod home;
 mod login;
 mod register;
-pub use game::Game;
+mod rps_game;
+pub use games_hub::GamesHub;
 pub use home::{AuthHome, UnAuthHome};
 pub use login::Login;
 pub use register::Register;
+pub use rps_game::RpsGame;

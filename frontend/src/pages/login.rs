@@ -83,7 +83,7 @@ pub fn Login() -> impl IntoView
             />
             </div>
 
-            <div class="stack" style="--stack-gap: var(--s2)">
+            <div class="stack" style="--stack-gap: var(--s2); margin-top: auto;">
             <button type="submit">
                 "Log in"
             </button>
@@ -91,10 +91,10 @@ pub fn Login() -> impl IntoView
 
             <div class="stack">
             <div class="grid">
-            <a href="/register" class="button">
+            <a href="/register" class="button secondary">
                 "Register"
             </a>
-            <a href="/" class="button">
+            <a href="/" class="button secondary">
                 "Home"
             </a>
             </div>

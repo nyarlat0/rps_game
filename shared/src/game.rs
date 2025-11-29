@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum GameResult
@@ -27,5 +28,18 @@ impl GameResult
             Defeat => Win,
             Draw => Draw,
         }
+    }
+}
+
+impl fmt::Display for GameResult
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
+        let s = match self {
+            GameResult::Win => "You win!",
+            GameResult::Defeat => "You lose!",
+            GameResult::Draw => "Is draw!",
+        };
+        write!(f, "{s}")
     }
 }

@@ -56,8 +56,12 @@ impl Handler<Join> for PlayersQueueActor
     {
         if !self.players.contains(&msg.user_id) {
             if !self.players.is_empty() {
-                let opp_id = self.players.pop_front()?;
-                Some(opp_id)
+                if *self.players.get(0).unwrap() != msg.user_id {
+                    let opp_id = self.players.pop_front()?;
+                    Some(opp_id)
+                } else {
+                    None
+                }
             } else {
                 self.players.push_back(msg.user_id);
                 None

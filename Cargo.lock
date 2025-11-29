@@ -2995,7 +2995,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
 ]
 
 [[package]]
