@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use slab::Slab;
-use tokio::sync::Mutex;
+use tokio::{sync::Mutex, time::Duration};
 use uuid::Uuid;
 
 use shared::game::GameError;
@@ -19,12 +19,25 @@ pub struct InMemoryGameService<G>
     player_to_game: Arc<Mutex<HashMap<Uuid, GameId>>>,
 }
 
-impl<G> InMemoryGameService<G> where G: ActiveGame
+impl<G> InMemoryGameService<G> where G: ActiveGame + 'static
 {
-    pub fn new() -> Self
+    pub fn new() -> Arc<Self>
     {
-        Self { active_games: Arc::new(Mutex::new(Slab::new())),
-               player_to_game: Arc::new(Mutex::new(HashMap::new())) }
+        let gs = Self { active_games: Arc::new(Mutex::new(Slab::new())),
+                        player_to_game: Arc::new(Mutex::new(HashMap::new())) };
+        let arc_gs = Arc::new(gs);
+
+        {
+            let arc_gs = arc_gs.clone();
+            tokio::spawn(async move {
+                loop {
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    arc_gs.clear_spoiled().await;
+                }
+            });
+        }
+
+        arc_gs
     }
 }
 
@@ -151,5 +164,18 @@ impl<G> GameService<G> for InMemoryGameService<G> where G: ActiveGame
         }
 
         finished
+    }
+
+    async fn clear_spoiled(&self)
+    {
+        let mut games = self.active_games.lock().await;
+        let mut map = self.player_to_game.lock().await;
+
+        let spoiled_k: Vec<usize> = games.iter()
+                                         .filter_map(|(id, g)| g.is_spoiled().then_some(id))
+                                         .collect();
+
+        games.retain(|id, _| !spoiled_k.contains(&id));
+        map.retain(|_, game_id| !spoiled_k.contains(game_id));
     }
 }

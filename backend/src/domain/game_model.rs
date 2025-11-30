@@ -22,6 +22,7 @@ pub trait ActiveGame: Send + Sync + Clone
     fn is_ready(&self) -> bool;
     fn try_resolve(&self) -> Option<Self::FinishedGame>;
     fn into_msg(&self, player_id: Uuid, player_name: &str, opp_name: &str) -> ServerMsg;
+    fn is_spoiled(&self) -> bool;
 }
 
 /// Abstract matchmaking queue that can be backed by any async runtime or actor system.
@@ -47,6 +48,7 @@ pub trait GameService<G>: Send + Sync
     async fn drop_for(&self, user_id: Uuid) -> Result<(), GameError>;
     async fn try_resolve(&self, user_id: Uuid) -> Option<G::FinishedGame>;
     async fn get_game(&self, user_id: Uuid) -> Option<G>;
+    async fn clear_spoiled(&self);
 }
 
 /// Port for pushing game events to clients (e.g., via websockets).

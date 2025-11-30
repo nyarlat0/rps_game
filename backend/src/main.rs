@@ -47,7 +47,7 @@ async fn main() -> std::io::Result<()>
     let rps_service = InMemoryGameService::<RpsGame>::new();
     let notifier = WsGameNotifier::new(users_actor);
 
-    let rps_game_handler = web::Data::new(GameHandler::<RpsGame>::new(Arc::new(rps_service),
+    let rps_game_handler = web::Data::new(GameHandler::<RpsGame>::new(rps_service,
                                                                       Arc::new(rps_player_qu),
                                                                       Arc::new(notifier)));
 

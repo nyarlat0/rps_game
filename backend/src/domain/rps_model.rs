@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, Utc};
 use shared::{rps_game::*, ws_messages::ServerMsg};
 use uuid::Uuid;
 
@@ -14,6 +15,7 @@ pub struct RpsPlayer
 pub struct RpsGame
 {
     pub players: [RpsPlayer; 2],
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Clone)]
@@ -52,7 +54,15 @@ impl ActiveGame for RpsGame
                              current_move: None };
         let op = RpsPlayer { id: opponent,
                              current_move: None };
-        Self { players: [pl, op] }
+        let created_at = Utc::now();
+
+        Self { players: [pl, op],
+               created_at }
+    }
+
+    fn is_spoiled(&self) -> bool
+    {
+        (Utc::now() - self.created_at) >= Duration::minutes(2)
     }
 
     fn set_move(&mut self, player_id: &Uuid, mv: RpsMove) -> Self

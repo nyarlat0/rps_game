@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos_use::core::ConnectionReadyState;
+use leptos_use::{core::ConnectionReadyState, use_timeout_fn, UseTimeoutFnReturn};
 use shared::{
     auth::UserInfo,
     game::{GameError, GameResult},
@@ -41,9 +41,31 @@ pub fn RpsGame() -> impl IntoView
 {
     let ws = expect_context::<WebsocketContext>();
     let user_info = expect_context::<UserInfo>();
+
     let (curr_game, set_curr_game) = signal::<Option<RpsGameState>>(None);
     let (curr_mv, set_curr_mv) = signal::<Option<RpsMove>>(None);
+    let (can_leave, set_can_leave) = signal(false);
+
     let toaster = MyToaster::new();
+
+    let UseTimeoutFnReturn { start: timer_start, .. } = {
+        let user_info = user_info.clone();
+        use_timeout_fn(move |()| {
+                           if let Some(RpsGameState::Game { players, submitted }) = curr_game.get()
+                           {
+                               let opp_sub = if players[0] == user_info.username {
+                                   submitted[1]
+                               } else {
+                                   submitted[0]
+                               };
+
+                               if !opp_sub {
+                                   set_can_leave.set(true);
+                               }
+                           }
+                       },
+                       20_000.0)
+    };
 
     Effect::new({
         let ws = ws.clone();
@@ -51,6 +73,10 @@ pub fn RpsGame() -> impl IntoView
         move |_| {
             if let Some(msg) = ws.message.get() {
                 if let ServerMsg::RpsGameMsg(rps_state) = msg {
+                    if matches!(rps_state, RpsGameState::Game { .. }) {
+                        set_can_leave.set(false);
+                        timer_start(()); // <<—— correct place
+                    }
                     set_curr_game.set(Some(rps_state));
                 } else if let ServerMsg::GameErrorMsg(GameError::Disconnected) = msg {
                     set_curr_game.set(None);
@@ -119,10 +145,14 @@ pub fn RpsGame() -> impl IntoView
 
         { move || {
             match curr_game.get() {
-                None => view!{
-                    <p>"Waiting for opponent.."</p>
-                    <div class="loading-spinner" style="margin-top: auto; margin-bottom: auto;"></div>
-                }.into_any(),
+                None => {
+                    set_can_leave.set(false);
+                    view!{
+                        <p>"Waiting for opponent.."</p>
+                        <div class="loading-spinner" style="margin-top: auto; margin-bottom: auto;"></div>
+                    }.into_any()
+                },
+
                 Some(RpsGameState::Game { players, submitted }) => {
                     let (opp_name, opp_sub, player_sub) = if players[0] == user_info.username {
                         (players[1].clone(), submitted[1], submitted[0])
@@ -197,6 +227,8 @@ pub fn RpsGame() -> impl IntoView
                     }.into_any()
                 }
                 Some(RpsGameState::Finished(mut info)) => {
+                    set_can_leave.set(false);
+
                     let (opp_name, opp_move, player_move, res) = if info.players[0] == user_info.username {
                         (info.players[1].clone(), info.moves[1], info.moves[0], info.resolve())
                     } else {
@@ -227,7 +259,7 @@ pub fn RpsGame() -> impl IntoView
             </button>
             <button
             class="secondary destructive"
-            class:el-hide=move || !curr_game.get().is_some_and(|g| matches!(g, RpsGameState::Game{..}))
+            class:el-hide=move || {!can_leave.get()}
             on:click=leave_btn>
                 "Leave"
             </button>

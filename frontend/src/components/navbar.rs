@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos_use::{
-    use_color_mode, use_cycle_list_with_options, ColorMode, UseColorModeReturn,
-    UseCycleListOptions, UseCycleListReturn,
+    use_color_mode_with_options, use_cycle_list_with_options, ColorMode, UseColorModeOptions,
+    UseColorModeReturn, UseCycleListOptions, UseCycleListReturn,
 };
 
 use crate::hooks::NavBarCtx;
@@ -13,7 +13,9 @@ pub fn NavBar() -> impl IntoView
     let (visible_forum, set_visible_forum) = navctx.visible_forum;
     let (new_posts, _) = navctx.new_posts;
 
-    let UseColorModeReturn { mode, set_mode, .. } = use_color_mode();
+    let UseColorModeReturn { mode, set_mode, .. } =
+        use_color_mode_with_options(UseColorModeOptions::default().initial_value(ColorMode::Dark)
+                                                                  .storage_enabled(true));
 
     let UseCycleListReturn {next: next_theme, ..} = use_cycle_list_with_options(
         vec![ColorMode::Dark, ColorMode::Light],
