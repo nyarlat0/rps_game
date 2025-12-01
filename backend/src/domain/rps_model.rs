@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use shared::{rps_game::*, ws_messages::ServerMsg};
+use shared::{game::GameResult, rps_game::*, ws_messages::ServerMsg};
 use uuid::Uuid;
 
 use crate::domain::game_model::{ActiveGame, FinishedGame};
@@ -23,6 +23,7 @@ pub struct FinishedRpsGame
 {
     pub players_id: [Uuid; 2],
     pub moves: [RpsMove; 2],
+    pub created_at: DateTime<Utc>,
 }
 
 impl FinishedGame for FinishedRpsGame
@@ -40,6 +41,21 @@ impl FinishedGame for FinishedRpsGame
         };
 
         ServerMsg::RpsGameMsg(RpsGameState::Finished(info))
+    }
+    fn resolve(&self) -> GameResult
+    {
+        let [your_move, opp_move] = &self.moves;
+        use RpsMove::*;
+        match (your_move, opp_move) {
+            (Rock, Scissors) | (Paper, Rock) | (Scissors, Paper) => GameResult::Win,
+            (Rock, Paper) | (Paper, Scissors) | (Scissors, Rock) => GameResult::Defeat,
+            _ => GameResult::Draw,
+        }
+    }
+    fn reverse(&mut self)
+    {
+        self.players_id.reverse();
+        self.moves.reverse();
     }
 }
 
@@ -110,7 +126,8 @@ impl ActiveGame for RpsGame
 
         Some(FinishedRpsGame { players_id: [p1.id, p2.id],
                                moves: [p1.current_move.clone()?,
-                                       p2.current_move.clone()?] })
+                                       p2.current_move.clone()?],
+                               created_at: self.created_at })
     }
 
     fn into_msg(&self, player_id: Uuid, player_name: &str, opp_name: &str) -> ServerMsg

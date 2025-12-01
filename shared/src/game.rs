@@ -16,6 +16,7 @@ pub enum GameError
     InvalidMove,
     Disconnected,
     AlreadyInGame,
+    DbError,
 }
 
 impl GameResult

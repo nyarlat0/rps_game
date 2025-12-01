@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use shared::game::GameError;
+use shared::game::{GameError, GameResult};
 use shared::ws_messages::ServerMsg;
 use uuid::Uuid;
 
@@ -8,6 +8,8 @@ pub type GameId = usize;
 pub trait FinishedGame: Send + Sync + Clone
 {
     fn into_msg(&self, player_id: Uuid, player_name: &str, opp_name: &str) -> ServerMsg;
+    fn resolve(&self) -> GameResult;
+    fn reverse(&mut self);
 }
 
 pub trait ActiveGame: Send + Sync + Clone
@@ -57,4 +59,11 @@ pub trait GameNotifier: Send + Sync
 {
     async fn notify(&self, user_id: Uuid, msg: ServerMsg);
     async fn get_name(&self, user_id: Uuid) -> Option<String>;
+}
+
+#[async_trait]
+pub trait GameRecorder<G>: Send + Sync
+    where G: ActiveGame
+{
+    async fn record(&self, game: G::FinishedGame) -> Result<(), GameError>;
 }

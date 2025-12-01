@@ -1,7 +1,9 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::domain::game_model::{ActiveGame, FinishedGame, GameNotifier, GameService, PlayerQueue};
+use crate::domain::game_model::{
+    ActiveGame, FinishedGame, GameNotifier, GameRecorder, GameService, PlayerQueue,
+};
 use shared::{game::GameError, ws_messages::ServerMsg};
 
 /// RPS-specific application orchestrator that enriches messages with usernames via AuthHandler.
@@ -11,18 +13,21 @@ pub struct GameHandler<G>
     pub player_queue: Arc<dyn PlayerQueue>,
     pub game_service: Arc<dyn GameService<G>>,
     pub notifier: Arc<dyn GameNotifier>,
+    pub recorder: Arc<dyn GameRecorder<G>>,
 }
 
 impl<G> GameHandler<G> where G: ActiveGame
 {
     pub fn new(game_service: Arc<dyn GameService<G>>,
                player_queue: Arc<dyn PlayerQueue>,
-               notifier: Arc<dyn GameNotifier>)
+               notifier: Arc<dyn GameNotifier>,
+               recorder: Arc<dyn GameRecorder<G>>)
                -> Self
     {
         Self { game_service,
                player_queue,
-               notifier }
+               notifier,
+               recorder }
     }
 
     pub async fn join(&self, user_id: Uuid) -> Result<(), GameError>
@@ -86,6 +91,8 @@ impl<G> GameHandler<G> where G: ActiveGame
 
         if curr_game.is_ready() {
             let fin_game = self.game_service.try_resolve(user_id).await.unwrap();
+            let _ = self.recorder.record(fin_game.clone()).await?;
+
             let msg = fin_game.into_msg(user_id, &player_name, &opp_name);
 
             self.notifier.notify(user_id, msg.clone()).await;

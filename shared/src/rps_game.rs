@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 use crate::game::GameResult;
 
@@ -9,19 +8,6 @@ pub enum RpsMove
     Rock,
     Paper,
     Scissors,
-}
-
-impl fmt::Display for RpsMove
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
-    {
-        let s = match self {
-            RpsMove::Rock => "Rock",
-            RpsMove::Paper => "Paper",
-            RpsMove::Scissors => "Scissors",
-        };
-        write!(f, "{s}")
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,5 +52,17 @@ impl RpsGameInfo
     {
         self.players.reverse();
         self.moves.reverse();
+    }
+}
+
+impl ToString for RpsMove
+{
+    fn to_string(&self) -> String
+    {
+        match self {
+            RpsMove::Rock => "Rock".into(),
+            RpsMove::Paper => "Paper".into(),
+            RpsMove::Scissors => "Scissors".into(),
+        }
     }
 }

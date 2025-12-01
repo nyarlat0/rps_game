@@ -27,6 +27,7 @@ async fn fallback() -> impl Responder
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
 {
+    dotenvy::from_path("/etc/rps_game/.env").ok();
     dotenv().ok();
     let db_url = env::var("DATABASE_URL").expect("Database URL isn't set");
 
@@ -43,13 +44,15 @@ async fn main() -> std::io::Result<()>
     let sh_users_actor = web::Data::new(users_actor.clone());
 
     let players_actor = PlayersQueueActor::new().start();
-    let rps_player_qu = ActorPlayerQueue::new(players_actor);
+    let rps_player_qu = Arc::new(ActorPlayerQueue::new(players_actor));
     let rps_service = InMemoryGameService::<RpsGame>::new();
-    let notifier = WsGameNotifier::new(users_actor);
+    let notifier = Arc::new(WsGameNotifier::new(users_actor));
+    let game_recorder = Arc::new(PsqlGameRecorder { db: pool.clone() });
 
     let rps_game_handler = web::Data::new(GameHandler::<RpsGame>::new(rps_service,
-                                                                      Arc::new(rps_player_qu),
-                                                                      Arc::new(notifier)));
+                                                                      rps_player_qu,
+                                                                      notifier,
+                                                                      game_recorder));
 
     HttpServer::new(move || {
         App::new().app_data(auth_handler.clone())
