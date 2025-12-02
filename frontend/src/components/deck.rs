@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_fluent::tr;
 
 #[component]
 pub fn Deck() -> impl IntoView
@@ -14,9 +15,9 @@ pub fn Deck() -> impl IntoView
                     class="cluster"
                     style="--cluster-justify: center; --cluster-gap: var(--s1)"
                 >
-                    <a href="/donate">"Donate"</a>
-                    <a href="/about">"About"</a>
-                    <a href="/contact">"Contact"</a>
+                    <a href="/donate">{ move || tr!("deck-donate") }</a>
+                    <a href="/about">{ move || tr!("deck-about") }</a>
+                    <a href="/contact">{ move || tr!("deck-contact") }</a>
             </nav>
             </div>
 

@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_fluent::{move_tr, tr};
 use leptos_use::{core::ConnectionReadyState, use_timeout_fn, UseTimeoutFnReturn};
 use shared::{
     auth::UserInfo,
@@ -81,7 +82,7 @@ pub fn RpsGame() -> impl IntoView
                 } else if let ServerMsg::GameErrorMsg(GameError::Disconnected) = msg {
                     set_curr_game.set(None);
                     set_curr_mv.set(None);
-                    toaster.error("Opponent disconnected!");
+                    toaster.error(&tr!("rps-opponent-disconnected"));
                     ws.send(ClientMsg::RpsGameMsg(RpsGameReq::Start));
                 }
             };
@@ -148,7 +149,7 @@ pub fn RpsGame() -> impl IntoView
                 None => {
                     set_can_leave.set(false);
                     view!{
-                        <p>"Waiting for opponent.."</p>
+                        <p>{ tr!("rps-waiting") }</p>
                         <div class="loading-spinner" style="margin-top: auto; margin-bottom: auto;"></div>
                     }.into_any()
                 },
@@ -169,13 +170,13 @@ pub fn RpsGame() -> impl IntoView
                     };
 
                     view!{
-                        <h3>"Playing against: "<span class="mention-name">{opp_name}</span>
+                        <h3>{ tr!("rps-playing-against-label") }{" "}<span class="mention-name">{opp_name}</span>
                         <span style="color: var(--muted);">
                         {move || {
                             if opp_sub {
-                                " (moved)"
+                                format!(" {}", tr!("rps-opponent-moved"))
                             } else {
-                                ""
+                                String::new()
                             }
                         }}
                         </span></h3>
@@ -225,7 +226,7 @@ pub fn RpsGame() -> impl IntoView
                             </button>
                         </div>
                         <p class:el-hide=!player_sub>
-                            "You played: "{mv_into_view(curr_mv.get().unwrap_or(RpsMove::Rock), 3)}
+                            { tr!("rps-you-played") }{" "}{mv_into_view(curr_mv.get().unwrap_or(RpsMove::Rock), 3)}
                         </p>
                     }.into_any()
                 }
@@ -239,6 +240,12 @@ pub fn RpsGame() -> impl IntoView
                         (info.players[1].clone(), info.moves[1], info.moves[0], info.resolve())
                     };
 
+                    let result_text = match res {
+                        GameResult::Win => tr!("rps-result-win"),
+                        GameResult::Defeat => tr!("rps-result-defeat"),
+                        GameResult::Draw => tr!("rps-result-draw"),
+                    };
+
                     view! {
                         <h3 style=match res {
                             GameResult::Win => "color: var(--success);",
@@ -246,10 +253,10 @@ pub fn RpsGame() -> impl IntoView
                             GameResult::Draw => "",
                         }
                         >
-                            "Game finished! "{res.to_string()}
+                            { move_tr!("rps-finished", {"result" => result_text.clone()}) }
                         </h3>
-                        <p><span class="mention-name">{opp_name}</span>" played:  "{mv_into_view(opp_move, 3)}</p>
-                        <p>"You played: "{mv_into_view(player_move, 3)}</p>
+                        <p><span class="mention-name">{opp_name}</span>{" "}{ tr!("rps-opponent-played-label") }{" "}{mv_into_view(opp_move, 3)}</p>
+                        <p>{ tr!("rps-you-played") }{" "}{mv_into_view(player_move, 3)}</p>
                     }.into_any()
                 }
             }
@@ -258,20 +265,20 @@ pub fn RpsGame() -> impl IntoView
             <button
             class:el-hide=move || !curr_game.get().is_some_and(|g| matches!(g, RpsGameState::Finished{..}))
             on:click=next_btn>
-                "Next game!"
+                { move || tr!("rps-next-game") }
             </button>
             <button
             class="secondary destructive"
             class:el-hide=move || {!can_leave.get()}
             on:click=leave_btn>
-                "Leave"
+                { move || tr!("rps-leave") }
             </button>
             <div class="cluster" style="--cluster-justify: center;">
             <a href = "/games" class="button secondary" style="width: 50%;">
-                "Other games"
+                { move || tr!("rps-other-games") }
             </a>
             <a href = "/" class="button secondary" style="width: calc(50% - 1rem);">
-                "Home"
+                { move || tr!("rps-home") }
             </a>
             </div>
             </div>

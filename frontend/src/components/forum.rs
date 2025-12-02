@@ -8,6 +8,7 @@ use leptos::{
     prelude::*,
     reactive::spawn_local,
 };
+use leptos_fluent::tr;
 use leptos_use::{storage::use_local_storage, use_scroll, UseScrollReturn};
 use shared::{forum::UserForumPost, ws_messages::ServerMsg};
 
@@ -83,7 +84,7 @@ pub fn Forum() -> impl IntoView
                     class="card stack forum"
                     class:active=move || visible_forum.get()
                 >
-                    "Log in to see forum!"
+                    { move || tr!("forum-login-prompt") }
                 </div>
             }
         >
@@ -127,7 +128,9 @@ fn ForumAuth() -> impl IntoView
                 spawn_local(async move {
                     match create_post(msg).await {
                         Ok(_) => forum_res.refetch(),
-                        Err(err) => toaster.error(&format!("{:?}", err)),
+                        Err(err) => {
+                            toaster.error(&format!("{} ({:?})", tr!("forum-send-error"), err))
+                        }
                     }
                 });
                 set_message.set("".to_string());
@@ -227,7 +230,7 @@ fn ForumAuth() -> impl IntoView
                                     set_loading.set(false);
                                 }
                             }
-                            None => toaster.error("Could not load old posts."),
+                            None => toaster.error(&tr!("forum-load-old-error")),
                         }
                     });
                 }
@@ -350,7 +353,7 @@ fn ForumAuth() -> impl IntoView
             class:active=move || visible_forum.get()
             node_ref=forum_elem
         >
-            <h3>"Forum"</h3>
+            <h3>{ move || tr!("forum-title") }</h3>
             <div
                 class:loading-spinner=move || loading.get()
                 style=move || if loading.get() {
@@ -379,7 +382,10 @@ fn ForumAuth() -> impl IntoView
                                         el.focus().ok();
                                     }
                                 })
-                                on_error=Callback::new(move |s: String| toaster.error(&s))
+                                on_error=Callback::new(move |s: String| {
+                                    let prefix = tr!("forum-action-error");
+                                    toaster.error(&format!("{prefix} ({s})"));
+                                })
                                 on_refetch=Callback::new(move |_| forum_res.refetch())
                             />
                         }
@@ -387,7 +393,7 @@ fn ForumAuth() -> impl IntoView
             />
             <textarea
                 name="message"
-                placeholder="Write your message..."
+                placeholder=move || tr!("forum-placeholder")
                 node_ref=textarea_elem
                 prop:value=move || message.get()
                 on:input=move |ev| set_message.set(event_target_value(&ev))
@@ -406,13 +412,13 @@ fn ForumAuth() -> impl IntoView
                 class="tetriary destructive"
                 on:click=move |_| set_message.set("".to_string())
                 >
-                    "Clear"
+                    { move || tr!("forum-clear") }
                 </button>
                 <button
                 style="width: 50%;"
                 on:click=move |_| on_submit()
                 >
-                    "Send"
+                    { move || tr!("forum-send") }
                 </button>
             </div>
         </div>

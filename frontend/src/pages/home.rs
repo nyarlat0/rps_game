@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_fluent::{move_tr, tr};
 
 use chrono::Local;
 use leptos_use::core::ConnectionReadyState;
@@ -42,45 +43,24 @@ pub fn AuthHome() -> impl IntoView
     view! {
         <div class="stack fill-page card">
 
-        <h1>"Dashboard"</h1>
+        <h1>{ move || tr!("auth-home-title") }</h1>
 
-        <h2>"Welcome, " {user_info.username} "!"</h2>
-        <p style="color: var(--success);">"Users online: "{online_count}</p>
-        <p>"Account created at: "{
-            user_info.created_at
-                .with_timezone(&Local)
-                .format("%d.%m.%Y %H:%M").to_string()
-        }</p>
+        <h2>{ move_tr!("auth-home-welcome", {"username" => user_info.username.clone()}) }</h2>
+        <p style="color: var(--success);">{ move_tr!("auth-home-online", {"count" => online_count.get()}) }</p>
+        <p>{ move_tr!("auth-home-created-at",
+            {"date" => user_info
+                             .created_at
+                             .with_timezone(&Local)
+                             .format("%d.%m.%Y %H:%M")
+                             .to_string()}) }</p>
 
         <a href = "/games" class="button" style ="margin-block-start: var(--s1); margin-top: auto;">
-            "Play"
+            { move || tr!("auth-home-play") }
         </a>
 
         <form method="POST" action="/api/auth/logout" class="stack">
-            <button type="submit" class="secondary destructive">"Logout"</button>
+            <button type="submit" class="secondary destructive">{ move || tr!("auth-home-logout") }</button>
         </form>
-
-        </div>
-    }
-}
-
-#[component]
-pub fn UnAuthHome() -> impl IntoView
-{
-    view! {
-        <div class="stack fill-page card">
-
-        <h1>"Welcome!"</h1>
-
-        <h2>"Please log in or register"</h2>
-
-        <a href="/login" class="button" style="margin-top: auto;">
-            "Login"
-        </a>
-
-        <a href = "/register" class="button">
-            "Register"
-        </a>
 
         </div>
     }

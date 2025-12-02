@@ -19,7 +19,7 @@ pub fn Register() -> impl IntoView
         let name = username.get();
 
         if name.chars().count() > 20 {
-            toaster.error("Username should be 20 characters or shorter.");
+            toaster.error(&tr!("register-username-too-long"));
             return;
         };
 
@@ -44,14 +44,14 @@ pub fn Register() -> impl IntoView
 
     view! {
         <form on:submit=on_submit class="stack fill-page card">
-            <h1>{ move || tr!("register")}</h1>
+            <h1>{ move || tr!("register") }</h1>
 
-            <label for="username">"Username:"</label>
+            <label for="username">{ move || tr!("register-username-label") }</label>
             <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="username"
                 type="text"
-                placeholder="Username"
+                placeholder=move || tr!("register-username-placeholder")
                 autocomplete="username"
                 required=true
                 prop:value=username
@@ -60,12 +60,12 @@ pub fn Register() -> impl IntoView
                 }
             />
             </div>
-            <label for="password">"Password:"</label>
+            <label for="password">{ move || tr!("register-password-label") }</label>
             <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="password"
                 type="password"
-                placeholder="Password"
+                placeholder=move || tr!("register-password-placeholder")
                 autocomplete="new-password"
                 required=true
                 prop:value=password
@@ -76,19 +76,14 @@ pub fn Register() -> impl IntoView
             </div>
             <div class="stack" style="--stack-gap: var(--s2); margin-top: auto;">
             <button type="submit">
-                "Register"
+                { move || tr!("register-submit") }
             </button>
             </div>
 
             <div class="stack">
-            <div class="grid">
             <a href="/login" class="button secondary">
-                "Login"
+                { move || tr!("register-login-link") }
             </a>
-            <a href="/" class="button secondary">
-                "Home"
-            </a>
-            </div>
             </div>
         </form>
     }

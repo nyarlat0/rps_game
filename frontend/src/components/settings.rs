@@ -1,6 +1,6 @@
 use codee::string::FromToStringCodec;
 use leptos::prelude::*;
-use leptos_fluent::I18n;
+use leptos_fluent::{move_tr, tr, I18n};
 use leptos_use::storage::use_local_storage;
 
 use crate::hooks::{SettingsCtx, UserResCtx};
@@ -52,7 +52,7 @@ pub fn Settings() -> impl IntoView
     view! {
         <div id="settings" popover="auto" class="stack fill-page">
 
-            <h1>"Settings"</h1>
+            <h1>{ move || tr!("settings-title") }</h1>
 
             <div
             class="cluster"
@@ -71,12 +71,12 @@ pub fn Settings() -> impl IntoView
             }
             />
             <label for="admin" style="font-weight: 700;">
-                "Admin Controls"
+                { move || tr!("settings-admin-controls") }
             </label>
             </div>
 
             <div class="cluster">
-            <svg class="icon" alt="Language" style="margin: 0;">
+            <svg class="icon" alt=move || tr!("settings-language-alt") style="margin: 0;">
                 <use href="/icons.svg#globe"></use>
             </svg>
             <div class="lang-switcher">
@@ -92,7 +92,7 @@ pub fn Settings() -> impl IntoView
             </div>
 
             <label for="light" style="font-weight: 700;">
-                {move || format!("Light: {:+}%", light.get())}
+                { move_tr!("settings-light", {"amount" => format!("{:+}", light.get())}) }
             </label>
             <div class="stack" style="--stack-gap: var(--s-2);">
             <input
@@ -106,7 +106,9 @@ pub fn Settings() -> impl IntoView
             />
             </div>
 
-            <label for="hue" style="font-weight: 700;">"Hue: +"{hue}"°"</label>
+            <label for="hue" style="font-weight: 700;">
+                { move_tr!("settings-hue", {"amount" => hue.get()}) }
+            </label>
             <div class="stack" style="--stack-gap: var(--s-2);">
             <input
             style="padding: 0;"
@@ -122,9 +124,9 @@ pub fn Settings() -> impl IntoView
             <div class="stack" style="--stack-gap: var(--s1)">
             <hr />
             <div class="cluster test-layout" style="--cluster-justify: space-evenly;">
-            <div class="toaster-test" id="info-test">"Info"</div>
-            <div class="toaster-test" id="success-test">"Success"</div>
-            <div class="toaster-test" id="error-test">"Error"</div>
+            <div class="toaster-test" id="info-test">{ move || tr!("settings-toast-info") }</div>
+            <div class="toaster-test" id="success-test">{ move || tr!("settings-toast-success") }</div>
+            <div class="toaster-test" id="error-test">{ move || tr!("settings-toast-error") }</div>
             </div>
             </div>
 

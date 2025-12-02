@@ -4,7 +4,7 @@ mod login;
 mod register;
 mod rps_game;
 pub use games_hub::GamesHub;
-pub use home::{AuthHome, UnAuthHome};
+pub use home::AuthHome;
 pub use login::Login;
 pub use register::Register;
 pub use rps_game::RpsGame;

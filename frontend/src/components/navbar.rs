@@ -3,6 +3,7 @@ use leptos_use::{
     use_color_mode_with_options, use_cycle_list_with_options, ColorMode, UseColorModeOptions,
     UseColorModeReturn, UseCycleListOptions, UseCycleListReturn,
 };
+use leptos_fluent::tr;
 
 use crate::hooks::NavBarCtx;
 
@@ -26,15 +27,15 @@ pub fn NavBar() -> impl IntoView
         <nav
         class="cluster navbar"
         style="--cluster-justify: space-between"
-        aria-label="Primary">
+        aria-label=move || tr!("navbar-primary")>
             <a href="/">
             { move || match mode.get() {
                 ColorMode::Dark => view! {
-                    <img class="icon" alt="Logo" src="/images/logo_light.png"/>
+                    <img class="icon" alt=move || tr!("navbar-logo-alt") src="/images/logo_light.png"/>
                 }.into_any(),
 
                 ColorMode::Light => view! {
-                    <img class="icon" alt="Logo" src="/images/logo_dark.png"/>
+                    <img class="icon" alt=move || tr!("navbar-logo-alt") src="/images/logo_dark.png"/>
                 }.into_any(),
 
                 _ => view! {}.into_any(),
@@ -48,19 +49,19 @@ pub fn NavBar() -> impl IntoView
             >
             <button
                 class="icon-btn navbar-icon"
-                title="Toggle theme"
-                aria-label="Toggle theme"
+                title=move || tr!("navbar-toggle-theme")
+                aria-label=move || tr!("navbar-toggle-theme")
                 on:click=move |_| next_theme()
             >
             { move || match mode.get() {
                 ColorMode::Dark => view! {
-                    <svg class="icon" alt="Toggle theme">
+                    <svg class="icon" alt=move || tr!("navbar-toggle-theme")>
                         <use href="/icons.svg#sun"></use>
                     </svg>
                 }.into_any(),
 
                 ColorMode::Light => view! {
-                    <svg class="icon" alt="Toggle theme">
+                    <svg class="icon" alt=move || tr!("navbar-toggle-theme")>
                         <use href="/icons.svg#moon"></use>
                     </svg>
                 }.into_any(),
@@ -73,21 +74,21 @@ pub fn NavBar() -> impl IntoView
                 class="icon-btn navbar-icon"
                 class:forum-btn-pressed=move || visible_forum.get()
                 class:has-new=move || new_posts.get()
-                title="Toggle forum"
-                aria-label="Toggle forum"
+                title=move || tr!("navbar-toggle-forum")
+                aria-label=move || tr!("navbar-toggle-forum")
                 on:click=move |_| set_visible_forum.update(|value| *value = !*value)
             >
-                <svg class="icon" alt="Toggle forum">
+                <svg class="icon" alt=move || tr!("navbar-toggle-forum")>
                     <use href="/icons.svg#message-square"></use>
                 </svg>
             </button>
             <button
                 class="icon-btn navbar-icon"
-                title="Toggle settings"
-                aria-label="Toggle settings"
+                title=move || tr!("navbar-toggle-settings")
+                aria-label=move || tr!("navbar-toggle-settings")
                 popovertarget="settings"
             >
-                <svg class="icon" alt="Toggle settings">
+                <svg class="icon" alt=move || tr!("navbar-toggle-settings")>
                     <use href="/icons.svg#settings"></use>
                 </svg>
             </button>

@@ -5,6 +5,7 @@ use crate::{
     hooks::{MyToaster, UserResCtx},
 };
 use leptos::{prelude::*, task::spawn_local};
+use leptos_fluent::tr;
 use leptos_router::hooks::use_navigate;
 use shared::auth::Credentials;
 use web_sys::SubmitEvent;
@@ -19,13 +20,17 @@ pub fn Login() -> impl IntoView
     let toaster = MyToaster::new();
 
     let UserResCtx(info_resource) = expect_context::<UserResCtx>();
+    let cookie_msg = untrack(|| tr!("login-cookie-info"));
 
     Effect::new({
         let toaster = toaster.clone();
+        let cookie_msg = cookie_msg.clone();
 
         move |_| {
             let toaster = toaster.clone();
-            set_timeout(move || toaster.info("By logging in you agree to our cookie policy."),
+            let cookie_msg = cookie_msg.clone();
+
+            set_timeout(move || toaster.info(&cookie_msg),
                         Duration::from_millis(600));
         }
     });
@@ -54,14 +59,14 @@ pub fn Login() -> impl IntoView
 
     view! {
         <form on:submit=on_submit class="stack fill-page card">
-            <h1>"Log In"</h1>
+            <h1>{ move || tr!("login-title") }</h1>
 
-            <label for="username">"Username:"</label>
+            <label for="username">{ move || tr!("login-username-label") }</label>
             <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="username"
                 type="text"
-                placeholder="Username"
+                placeholder=move || tr!("login-username-placeholder")
                 autocomplete="username"
                 required=true
                 prop:value=username
@@ -70,12 +75,12 @@ pub fn Login() -> impl IntoView
                 }
             />
             </div>
-            <label for="password">"Password:"</label>
+            <label for="password">{ move || tr!("login-password-label") }</label>
             <div class="stack" style="--stack-gap: var(--s-1)">
             <input
                 id="password"
                 type="password"
-                placeholder="Password"
+                placeholder=move || tr!("login-password-placeholder")
                 autocomplete="current-password"
                 required=true
                 prop:value=password
@@ -87,19 +92,14 @@ pub fn Login() -> impl IntoView
 
             <div class="stack" style="--stack-gap: var(--s2); margin-top: auto;">
             <button type="submit">
-                "Log in"
+                { move || tr!("login-submit") }
             </button>
             </div>
 
             <div class="stack">
-            <div class="grid">
             <a href="/register" class="button secondary">
-                "Register"
+                { move || tr!("login-register-link") }
             </a>
-            <a href="/" class="button secondary">
-                "Home"
-            </a>
-            </div>
             </div>
         </form>
     }
