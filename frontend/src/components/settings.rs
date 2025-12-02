@@ -1,5 +1,6 @@
 use codee::string::FromToStringCodec;
 use leptos::prelude::*;
+use leptos_fluent::I18n;
 use leptos_use::storage::use_local_storage;
 
 use crate::hooks::{SettingsCtx, UserResCtx};
@@ -20,6 +21,33 @@ pub fn Settings() -> impl IntoView
     let (hue, set_hue, _) = use_local_storage::<i32, FromToStringCodec>("hue");
 
     let (admin, set_admin) = expect_context::<SettingsCtx>().admin_control;
+
+    let (lang_open, set_lang_open) = signal(false);
+
+    let toggle_lang = move |_| set_lang_open.update(|v| *v = !*v);
+
+    let i18n = expect_context::<I18n>();
+    let menu_items = move || {
+        i18n.languages
+            .iter()
+            .map(|lang| {
+                let _code = lang.id;
+                let name = lang.name;
+
+                view! {
+                    <button
+                        class="lang-item"
+                        on:click=move |_| {
+                            i18n.language.set(lang);
+                            set_lang_open.set(false);
+                        }
+                    >
+                        {name}
+                    </button>
+                }
+            })
+            .collect::<Vec<_>>()
+    };
 
     view! {
         <div id="settings" popover="auto" class="stack fill-page">
@@ -45,6 +73,22 @@ pub fn Settings() -> impl IntoView
             <label for="admin" style="font-weight: 700;">
                 "Admin Controls"
             </label>
+            </div>
+
+            <div class="cluster">
+            <svg class="icon" alt="Language" style="margin: 0;">
+                <use href="/icons.svg#globe"></use>
+            </svg>
+            <div class="lang-switcher">
+
+            <button on:click=toggle_lang class="lang-button" class:pressed=lang_open>
+                { move || i18n.language.get().name }
+            </button>
+
+            <div class="lang-menu cluster" class:active=lang_open>
+                {menu_items}
+            </div>
+            </div>
             </div>
 
             <label for="light" style="font-weight: 700;">

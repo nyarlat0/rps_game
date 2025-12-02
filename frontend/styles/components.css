@@ -60,7 +60,6 @@
     box-shadow: 0 var(--s-2) var(--s-1) oklch(0% 0 0 / 25%);
   }
 
-  /* Footer just sits at the bottom row */
   .site-footer {
     padding: 0 var(--s-2);
     & > nav > a {
@@ -70,6 +69,7 @@
       }
     }
   }
+
 
   .deck {
     --surface: var(--surface-deep);
@@ -383,6 +383,101 @@
     border-radius: 9999px;
     background: var(--success);
     outline: 2px solid var(--surface, #0b0b0b);
+  }
+
+  button.lang-button {
+    --btn-color: var(--surface-deep);
+    color: var(--muted);
+    box-shadow: none;
+    border-style: solid;
+    border-color: transparent;
+    border-width: var(--s-5);
+    padding: var(--s-1);
+    transition: border-color 0.3s,
+      background 0.3s,
+      box-shadow 0.3s;
+
+    &:hover {
+      --btn-color: var(--surface);
+      color: var(--ink);
+    }
+    &.pressed {
+      --btn-color: var(--surface-high);
+      color: var(--ink);
+      border-color: var(--focus);
+      box-shadow: 0 var(--s-4) 0 oklch(from var(--focus) calc(l - 0.1) c h);
+      transform: translateY(calc(-1 * var(--s-5)));
+
+      &:hover {
+        transform: translateY(0);
+        background: var(--surface);
+        color: var(--muted);
+        border-color: var(--brand);
+        box-shadow: none;
+      }
+
+      &:active {
+        background: var(--surface-deep);
+        border-color: transparent;
+      }
+    }
+  }
+
+  .lang-switcher {
+    position: relative;
+    display: inline-block;
+    overflow: visible;
+    overflow-wrap: normal;
+    align-items: baseline;
+  }
+
+
+  .lang-menu {
+    position:absolute;
+    width: max-content;
+    top: 50%;
+    left: 100%;
+    margin-left: 0.5rem;
+
+    background: var(--surface);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    box-shadow: var(--shadow-high);
+
+    transform: translateY(-50%) translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition-timing-function: ease-in;
+    transition:
+      opacity .3s,
+      visibility .3s allow-discrete,
+      transform .3s;
+
+    &.active {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+      pointer-events: auto;
+      transition-timing-function: ease-out;
+
+      @starting-style {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-50%);
+      }
+    }
+  }
+
+  @keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-0.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
   }
 
   button, .button {

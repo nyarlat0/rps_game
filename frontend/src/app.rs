@@ -15,6 +15,31 @@ use crate::components::*;
 use crate::hooks::*;
 use crate::pages::*;
 
+use fluent_templates::static_loader;
+use leptos_fluent::leptos_fluent;
+
+static_loader! {
+    pub static TRANSLATIONS = {
+        locales: "./locales",
+        fallback_language: "en",
+    };
+}
+
+#[component]
+fn I18nProvider(children: Children) -> impl IntoView
+{
+    leptos_fluent! {
+        children: children(),
+        translations: [TRANSLATIONS],
+        default_language: "en",
+        initial_language_from_navigator: true,
+        set_language_to_local_storage: true,
+        local_storage_key: "language",
+        initial_language_from_local_storage: true,
+        locales: "./locales",
+    }
+}
+
 #[component]
 pub fn App() -> impl IntoView
 {
@@ -55,6 +80,7 @@ pub fn App() -> impl IntoView
     let load_anim = Signal::derive(move || info.get().is_some());
 
     view! {
+        <I18nProvider>
         <Toaster />
         <Router>
             <style>{
@@ -101,6 +127,7 @@ pub fn App() -> impl IntoView
             <Forum />
             <Settings />
         </Router>
+        </I18nProvider>
     }
 }
 

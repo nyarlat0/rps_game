@@ -8,13 +8,15 @@ serde = {workspace = true}
 serde_json = {workspace = true}
 chrono = {workspace = true}
 
-leptos = {version = "0.8.6", features = ["csr"]}
-leptos_router = "0.8.5"
+leptos = {version = "0.8.14", features = ["csr"]}
+leptos_router = "0.8.10"
 leptoaster = "0.2.3"
-leptos-use = "0.16.2"
+leptos-use = "0.16.3"
+leptos-fluent = "0.2.20"
+fluent-templates = "0.13.2"
 gloo-net = "0.6.0"
-js-sys = "0.3.77"
-web-sys = "0.3.77"
-codee = "0.3.2"
-wasm-bindgen-futures = "0.4.50"
+js-sys = "0.3.83"
+web-sys = "0.3.83"
+codee = "0.3.4"
+wasm-bindgen-futures = "0.4.56"
 shared = {path = "../shared"}

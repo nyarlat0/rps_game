@@ -1,5 +1,6 @@
 use crate::{api::register_user, hooks::MyToaster};
 use leptos::{prelude::*, task::spawn_local};
+use leptos_fluent::tr;
 use leptos_router::hooks::use_navigate;
 use shared::auth::Credentials;
 use web_sys::SubmitEvent;
@@ -43,7 +44,7 @@ pub fn Register() -> impl IntoView
 
     view! {
         <form on:submit=on_submit class="stack fill-page card">
-            <h1>"Register"</h1>
+            <h1>{ move || tr!("register")}</h1>
 
             <label for="username">"Username:"</label>
             <div class="stack" style="--stack-gap: var(--s-1)">
