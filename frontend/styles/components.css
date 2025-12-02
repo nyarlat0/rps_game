@@ -73,16 +73,15 @@
 
   .deck {
     --surface: var(--surface-deep);
-    position: absolute;
+    margin-inline: auto;
     min-inline-size: min(80dvw, 35ch);
     min-height: calc(30px + 2.5rem);
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
     overflow: hidden;
+    position: relative;
   }
 
   .deck-card {
+    margin-inline: auto;
     position: absolute;
     min-height: 30ch;
   }
@@ -165,7 +164,6 @@
     overflow: visible;
     appearance: none;
     border: 0;
-    background: none;
     color: inherit;
     font: inherit;
     line-height: inherit;
@@ -184,11 +182,6 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;  /* avoids 300ms delays on old mobile stacks */
 
-    &:hover {
-      box-shadow: none;
-      background: oklch(from var(--hover-color, var(--surface)) calc(l + 0.05) c h / 50%);
-
-    }
     &:focus-visible {
       outline: var(--brand);
     }
@@ -196,6 +189,19 @@
       pointer-events: none;
       margin: 0;
     }
+  }
+
+  button.navbar-icon {
+    background: none;
+    box-shadow: none;
+
+    &:hover {
+      box-shadow: none;
+      transform: none;
+      background: oklch(from var(--hover-color, var(--surface)) calc(l + 0.05) c h / 50%);
+
+    }
+
   }
 
   .forum {
@@ -344,11 +350,13 @@
     padding: 0 var(--s-2);
     background: transparent;
     border-radius: var(--s-2);
+    box-shadow: none;
 
     &:hover {
+      box-shadow: none;
+      transform: none;
       color: oklch(from var(--success) calc(l + 0.05) c h);
       background: oklch(from var(--success) calc(l + 0.05) c h / 25%);
-      box-shadow: none;
     }
   }
 
@@ -391,12 +399,27 @@
     overflow: hidden;
     z-index: 1;
 
+    box-shadow:
+      0 var(--s-5) 0 oklch(from var(--btn-color) calc(l - 0.15) c h);
+
     transition:
       background 0.3s,
       box-shadow 0.3s;
+
     &:hover {
       background: oklch(from var(--btn-color) calc(l + 0.05) c h);
-      box-shadow: 0 0 var(--s1) oklch(from var(--btn-color) calc(l + 0.05) c h / 50%);
+      transform: translateY(calc(-1 * var(--s-5)));
+      box-shadow:
+        0 var(--s-4) 0 oklch(from var(--btn-color) calc(l - 0.1) c h),
+        0 0 var(--s0) oklch(from var(--btn-color) calc(l + 0.05) c h / 50%);
+    }
+
+    &:active {
+      transform: translateY(0);
+      background: color-mix(in oklch, black 20%, var(--btn-color));
+      box-shadow:
+        0 0 0 oklch(from var(--btn-color) calc(l - 0.15) c h);
+      color: var(--muted);
     }
 
     &.destructive {
@@ -425,11 +448,13 @@
     &.tetriary {
       color: var(--btn-color);
       background: transparent;
+      box-shadow: none;
 
       transition: color 0.3s;
       &:hover {
         background: transparent;
         box-shadow: none;
+        transform: none;
         color: oklch(from var(--btn-color) calc(l + 0.05) c h);
       }
     }

@@ -317,7 +317,7 @@ fn ForumAuth() -> impl IntoView
 
     view! {
         <button
-            class="forum-reload-btn icon-btn"
+            class="forum-reload-btn icon-btn navbar-icon"
             class:active=move || visible_forum.get()
             on:click=move |_| forum_res.refetch()
         >
@@ -326,7 +326,7 @@ fn ForumAuth() -> impl IntoView
             </svg>
         </button>
         <button
-            class="forum-scroll-btn icon-btn"
+            class="forum-scroll-btn icon-btn navbar-icon"
             class:active=move || visible_forum.get()
             style=move || if near_bottom.get() {
                 "display: none;"
@@ -536,7 +536,7 @@ fn PostRow(upost: UserForumPost,
             <div class="cluster" style="--cluster-justify: space-between; --cluster-align: baseline;">
             <div class="cluster">
                 <button
-                    class="forum-reaction-btn icon-btn"
+                    class="forum-reaction-btn icon-btn navbar-icon"
                     style=move || if like_active() {
                         "--hover-color:var(--success); color:var(--success); align-items:baseline;"
                     } else {
@@ -551,7 +551,7 @@ fn PostRow(upost: UserForumPost,
                 </button>
 
                 <button
-                    class="forum-reaction-btn icon-btn"
+                    class="forum-reaction-btn icon-btn navbar-icon"
                     style=move || if dislike_active() {
                         "--hover-color:var(--error); color:var(--error); align-items:baseline;"
                     } else {
@@ -566,7 +566,7 @@ fn PostRow(upost: UserForumPost,
                 </button>
             </div>
             <button
-            class="forum-reaction-btn icon-btn"
+            class="forum-reaction-btn icon-btn navbar-icon"
             style=move || if is_admin.get() {
                 "--hover-color:var(--error);"
             } else {

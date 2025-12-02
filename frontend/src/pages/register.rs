@@ -15,7 +15,14 @@ pub fn Register() -> impl IntoView
 
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
-        let creds = Credentials { username: username.get(),
+        let name = username.get();
+
+        if name.chars().count() > 20 {
+            toaster.error("Username should be 20 characters or shorter.");
+            return;
+        };
+
+        let creds = Credentials { username: name,
                                   password: password.get() };
 
         let toaster = toaster.clone();
@@ -44,6 +51,7 @@ pub fn Register() -> impl IntoView
                 id="username"
                 type="text"
                 placeholder="Username"
+                autocomplete="username"
                 required=true
                 prop:value=username
                 on:input=move |ev|{
@@ -57,6 +65,7 @@ pub fn Register() -> impl IntoView
                 id="password"
                 type="password"
                 placeholder="Password"
+                autocomplete="new-password"
                 required=true
                 prop:value=password
                 on:input=move |ev|{

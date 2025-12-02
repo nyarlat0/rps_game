@@ -62,6 +62,7 @@ pub fn Login() -> impl IntoView
                 id="username"
                 type="text"
                 placeholder="Username"
+                autocomplete="username"
                 required=true
                 prop:value=username
                 on:input=move |ev|{
@@ -75,6 +76,7 @@ pub fn Login() -> impl IntoView
                 id="password"
                 type="password"
                 placeholder="Password"
+                autocomplete="current-password"
                 required=true
                 prop:value=password
                 on:input=move |ev|{

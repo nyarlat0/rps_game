@@ -169,13 +169,16 @@ pub fn RpsGame() -> impl IntoView
                     };
 
                     view!{
-                        <h3>"Playing against: "{move || {
+                        <h3>"Playing against: "<span class="mention-name">{opp_name}</span>
+                        <span style="color: var(--muted);">
+                        {move || {
                             if opp_sub {
-                                format!("{} (moved)", opp_name.clone())
+                                " (moved)"
                             } else {
-                                opp_name.clone()
+                                ""
                             }
-                        }}</h3>
+                        }}
+                        </span></h3>
                         <div
                         class="cluster"
                         class:el-hide=player_sub
@@ -245,7 +248,7 @@ pub fn RpsGame() -> impl IntoView
                         >
                             "Game finished! "{res.to_string()}
                         </h3>
-                        <p>{opp_name}" played:  "{mv_into_view(opp_move, 3)}</p>
+                        <p><span class="mention-name">{opp_name}</span>" played:  "{mv_into_view(opp_move, 3)}</p>
                         <p>"You played: "{mv_into_view(player_move, 3)}</p>
                     }.into_any()
                 }

@@ -47,7 +47,7 @@ pub fn NavBar() -> impl IntoView
             style="--cluster-gap: 0;"
             >
             <button
-                class="icon-btn"
+                class="icon-btn navbar-icon"
                 title="Toggle theme"
                 aria-label="Toggle theme"
                 on:click=move |_| next_theme()
@@ -70,7 +70,7 @@ pub fn NavBar() -> impl IntoView
             }
             </button>
             <button
-                class="icon-btn"
+                class="icon-btn navbar-icon"
                 class:forum-btn-pressed=move || visible_forum.get()
                 class:has-new=move || new_posts.get()
                 title="Toggle forum"
@@ -82,7 +82,7 @@ pub fn NavBar() -> impl IntoView
                 </svg>
             </button>
             <button
-                class="icon-btn"
+                class="icon-btn navbar-icon"
                 title="Toggle settings"
                 aria-label="Toggle settings"
                 popovertarget="settings"
