@@ -39,7 +39,7 @@ pub fn Deck() -> impl IntoView
             </div>
 
             <For
-            each=move || (1..10)
+            each=move || 1..10
             key=|i| *i
             children=move |i| {
                 view! {
