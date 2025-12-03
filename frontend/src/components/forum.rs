@@ -1,14 +1,14 @@
 use leptos::task;
 use std::sync::Arc;
 
-use chrono::{DateTime, Datelike, Local, Utc};
+use chrono::{DateTime, Datelike, Local, Timelike, Utc};
 use codee::string::FromToStringCodec;
 use leptos::{
     html::{Div, Textarea},
     prelude::*,
     reactive::spawn_local,
 };
-use leptos_fluent::tr;
+use leptos_fluent::{tr, I18n};
 use leptos_use::{storage::use_local_storage, use_scroll, UseScrollReturn};
 use shared::{forum::UserForumPost, ws_messages::ServerMsg};
 
@@ -447,6 +447,8 @@ fn PostRow(upost: UserForumPost,
            on_refetch: Callback<()>)
            -> impl IntoView
 {
+    let i18n = expect_context::<I18n>();
+
     let post = upost.post;
     let UsernameCtx(username) = expect_context::<UsernameCtx>();
 
@@ -534,7 +536,7 @@ fn PostRow(upost: UserForumPost,
                 </button>
             </div>
             <p style="color:var(--muted);">
-                {display_time(post.created_at)}
+                {move || display_time(post.created_at, &i18n.language.get().id.to_string())}
             </p>
         </div>
 
@@ -597,16 +599,39 @@ fn PostRow(upost: UserForumPost,
     }
 }
 
-fn display_time(dt: DateTime<Utc>) -> String
+fn display_time(dt_utc: DateTime<Utc>, lang_code: &str) -> String
 {
-    let dt = dt.with_timezone(&Local);
+    let dt = dt_utc.with_timezone(&Local);
     let now = Local::now();
 
-    if dt.date_naive() == now.date_naive() {
-        dt.format("%H:%M").to_string()
-    } else if dt.year() == now.year() {
-        dt.format("%-d %b %H:%M").to_string()
+    const MONTHS_EN: [&str; 12] =
+        ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const MONTHS_RU: [&str; 12] =
+        ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+
+    let months = if lang_code.starts_with("ru") {
+        &MONTHS_RU
     } else {
-        dt.format("%d.%m.%Y %H:%M").to_string()
+        &MONTHS_EN
+    };
+
+    let h = dt.hour();
+    let m = dt.minute();
+
+    if dt.date_naive() == now.date_naive() {
+        // Сегодня: только время
+        format!("{:02}:{:02}", h, m)
+    } else if dt.year() == now.year() {
+        // В этом году: `2 Dec 04:25` / `2 дек 04:25`
+        let month = months[(dt.month() - 1) as usize];
+        format!("{} {} {:02}:{:02}", dt.day(), month, h, m)
+    } else {
+        // Старый год: `02.12.24 04:25`
+        format!("{:02}.{:02}.{:02} {:02}:{:02}",
+                dt.day(),
+                dt.month(),
+                dt.year() % 100,
+                h,
+                m)
     }
 }

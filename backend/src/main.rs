@@ -1,6 +1,5 @@
 use actix::Actor;
-use actix_files as fs;
-use actix_web::{web, App, HttpServer, Responder};
+use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
 use sqlx::PgPool;
 use std::env;
@@ -17,12 +16,6 @@ use crate::domain::rps_model::RpsGame;
 use crate::domain::users_actor::UsersActor;
 use crate::infrastructure::{auth::*, forum::*, game::*};
 use crate::ws::ws_route;
-
-async fn fallback() -> impl Responder
-{
-    actix_files::NamedFile::open_async("./frontend/dist/index.html").await
-                                                                    .unwrap()
-}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()>
@@ -62,8 +55,6 @@ async fn main() -> std::io::Result<()>
                   .service(web::scope("/api").configure(configure_auth)
                                              .service(ws_route)
                                              .service(forum_control))
-                  .service(fs::Files::new("/", "./frontend/dist").index_file("index.html"))
-                  .default_service(web::get().to(fallback))
     }).bind("127.0.0.1:8081")?
       .run()
       .await

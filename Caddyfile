@@ -1,6 +1,16 @@
 {
 	auto_https off
 }
+
 :3000 {
-	reverse_proxy localhost:8081
+	route {
+		# --- API --- #
+		@api path /api/*
+		reverse_proxy @api 127.0.0.1:8081
+
+		# --- FRONTEND SPA FALLBACK --- #
+		root * /home/nyarlat/rusticks/rps_game/frontend/dist/
+		try_files {path} /index.html
+		file_server
+	}
 }
