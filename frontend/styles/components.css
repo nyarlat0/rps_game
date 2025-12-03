@@ -386,7 +386,7 @@
   }
 
   button.lang-button {
-    --btn-color: var(--surface-deep);
+    --btn-color: var(--surface);
     color: var(--muted);
     box-shadow: none;
     border-style: solid;
