@@ -287,7 +287,7 @@ fn ForumAuth() -> impl IntoView
         let opt_id = posts_sig.with(|v| v.last().map(|up| up.post.id));
 
         if let Some(last_id) = opt_id {
-            if last_id != ls {
+            if last_id > ls {
                 set_new_posts.set(true);
             } else if new_posts.get_untracked() {
                 set_new_posts.set(false);
