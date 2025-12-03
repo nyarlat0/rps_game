@@ -6,9 +6,21 @@ default_to_workspace = false
 [tasks.dev-backend]
 script = ["cargo watch -x \"run -p backend\""]
 
-[tasks.run-backend]
+[tasks.build-backend]
 command = "cargo"
-args = ["run", "-r", "-p", "backend"]
+args = ["build", "--release", "-p", "backend"]
+
+[tasks.move-backend]
+script = [
+  '''
+  #!/usr/bin/env bash
+  set -e
+  echo "Installing backend into /usr/local/bin/rps_backend"
+
+  doas install -m755 target/release/backend /usr/local/bin/rps_backend
+  echo "Done"
+  '''
+]
 
 ### Frontend ###
 
@@ -19,7 +31,7 @@ cwd = "./frontend"
 
 [tasks.build-frontend]
 command = "trunk"
-args = ["build", "--release"]
+args = ["build", "--release", "--dist", "/var/www/rps_game/"]
 cwd = "./frontend"
 
 ### Server ###
@@ -32,14 +44,14 @@ args = ["caddy", "run"]
 
 [tasks.dev]
 run_task = {name = [
-              "serve-app",
-              "dev-backend",
-              "dev-frontend"
-              ], parallel = true}
+  "serve-app",
+  "dev-backend",
+  "dev-frontend"
+], parallel = true}
 
-[tasks.start]
+[tasks.deploy]
 run_task = { name = [
-              "serve-app",
-              "run-backend"
-              ], parallel = true }
-dependencies = ["build-frontend"]
+  "build-frontend",
+  "build-backend",
+  "move-backend"
+] }
