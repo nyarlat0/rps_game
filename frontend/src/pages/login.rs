@@ -43,11 +43,13 @@ pub fn Login() -> impl IntoView
         let toaster = toaster.clone();
         let navigate = navigate.clone();
 
+        let success_msg = tr!("login-success");
+
         spawn_local(async move {
             match login_user(&creds).await {
-                Ok(msg) => {
+                Ok(_msg) => {
                     info_resource.refetch();
-                    toaster.success(&msg);
+                    toaster.success(&success_msg);
                     navigate("/", Default::default());
                 }
                 Err(msg) => {

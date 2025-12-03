@@ -19,7 +19,8 @@ pub fn Register() -> impl IntoView
         let name = username.get();
 
         if name.chars().count() > 20 {
-            toaster.error(&tr!("register-username-too-long"));
+            let msg = tr!("register-username-too-long");
+            toaster.error(&msg);
             return;
         };
 
@@ -29,10 +30,12 @@ pub fn Register() -> impl IntoView
         let toaster = toaster.clone();
         let navigate = navigate.clone();
 
+        let success_reg_msg = tr!("register-success");
+
         spawn_local(async move {
             match register_user(&creds).await {
-                Ok(msg) => {
-                    toaster.success(&msg);
+                Ok(_msg) => {
+                    toaster.success(&success_reg_msg);
                     navigate("/login", Default::default());
                 }
                 Err(msg) => {

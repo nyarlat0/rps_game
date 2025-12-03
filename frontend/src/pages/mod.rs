@@ -1,10 +1,12 @@
 mod games_hub;
 mod home;
+mod info;
 mod login;
 mod register;
 mod rps_game;
 pub use games_hub::GamesHub;
 pub use home::AuthHome;
+pub use info::{About, Contact};
 pub use login::Login;
 pub use register::Register;
 pub use rps_game::RpsGame;

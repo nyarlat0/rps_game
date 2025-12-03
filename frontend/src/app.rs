@@ -163,6 +163,8 @@ fn AuthView(user_info: UserInfo) -> impl IntoView
             <Route path=path!("/") view=AuthHome/>
             <Route path=path!("/login") view=|| {view! {<Redirect path="/" />}} />
             <Route path=path!("/register") view=|| {view! {<Redirect path="/" />}} />
+            <Route path=path!("/about") view=About />
+            <Route path=path!("/contact") view=Contact />
             <ParentRoute path=path!("/games") view=|| {view! {<Outlet />}} >
                 <Route path=path!("") view=GamesHub />
                 <Route path=path!("rps") view=RpsGame />

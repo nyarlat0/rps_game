@@ -149,8 +149,8 @@
   }
 
   .icon {
-    inline-size: 2.5cap;
-    block-size: 2.5cap;
+    inline-size: var(--size, 2.5cap);
+    block-size: var(--size, 2.5cap);
     aspect-ratio: 1;
     display: inline-block;
     margin: 0 var(--s-2);

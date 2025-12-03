@@ -82,7 +82,8 @@ pub fn RpsGame() -> impl IntoView
                 } else if let ServerMsg::GameErrorMsg(GameError::Disconnected) = msg {
                     set_curr_game.set(None);
                     set_curr_mv.set(None);
-                    toaster.error(&tr!("rps-opponent-disconnected"));
+                    let msg = tr!("rps-opponent-disconnected");
+                    toaster.error(&msg);
                     ws.send(ClientMsg::RpsGameMsg(RpsGameReq::Start));
                 }
             };

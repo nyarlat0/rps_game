@@ -129,7 +129,9 @@ fn ForumAuth() -> impl IntoView
                     match create_post(msg).await {
                         Ok(_) => forum_res.refetch(),
                         Err(err) => {
-                            toaster.error(&format!("{} ({:?})", tr!("forum-send-error"), err))
+                            let prefix = tr!("forum-send-error");
+                            let toast = format!("{prefix} ({err:?})");
+                            toaster.error(&toast);
                         }
                     }
                 });
@@ -230,7 +232,10 @@ fn ForumAuth() -> impl IntoView
                                     set_loading.set(false);
                                 }
                             }
-                            None => toaster.error(&tr!("forum-load-old-error")),
+                            None => {
+                                let msg = tr!("forum-load-old-error");
+                                toaster.error(&msg);
+                            }
                         }
                     });
                 }
@@ -384,7 +389,8 @@ fn ForumAuth() -> impl IntoView
                                 })
                                 on_error=Callback::new(move |s: String| {
                                     let prefix = tr!("forum-action-error");
-                                    toaster.error(&format!("{prefix} ({s})"));
+                                    let msg = format!("{prefix} ({s})");
+                                    toaster.error(&msg);
                                 })
                                 on_refetch=Callback::new(move |_| forum_res.refetch())
                             />
