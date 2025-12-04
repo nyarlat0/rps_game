@@ -32,6 +32,7 @@ fn I18nProvider(children: Children) -> impl IntoView
         children: children(),
         translations: [TRANSLATIONS],
         default_language: "en",
+        sync_html_tag_lang: true,
         initial_language_from_navigator: true,
         set_language_to_local_storage: true,
         local_storage_key: "language",
