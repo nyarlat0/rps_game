@@ -138,6 +138,8 @@ fn UnAuthView() -> impl IntoView
         <Routes transition=true fallback=|| "Not found.">
             <Route path=path!("/login") view=Login />
             <Route path=path!("/register") view=Register />
+            <Route path=path!("/about") view=About />
+            <Route path=path!("/contact") view=Contact />
             <Route path=path!("/*any") view=Login />
         </Routes>
     }
