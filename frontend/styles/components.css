@@ -102,7 +102,7 @@
     &.deck-card {
       box-shadow: none;
       background: var(--surface-deep);
-      border: 2px solid var(--surface-high);
+      border: 1px solid var(--surface-high);
     }
   }
 
