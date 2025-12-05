@@ -1,9 +1,10 @@
-use actix::Actor;
+use actix::prelude::*;
 use actix_web::{web, App, HttpServer};
 use dotenvy::dotenv;
 use sqlx::PgPool;
 use std::env;
 use std::sync::Arc;
+use tokio::signal;
 
 pub mod application;
 pub mod domain;
@@ -47,15 +48,24 @@ async fn main() -> std::io::Result<()>
                                                                       notifier,
                                                                       game_recorder));
 
-    HttpServer::new(move || {
-        App::new().app_data(auth_handler.clone())
-                  .app_data(forum_handler.clone())
-                  .app_data(sh_users_actor.clone())
-                  .app_data(rps_game_handler.clone())
-                  .service(web::scope("/api").configure(configure_auth)
-                                             .service(ws_route)
-                                             .service(forum_control))
-    }).bind("127.0.0.1:8081")?
-      .run()
-      .await
+    let server = HttpServer::new(move || {
+                     App::new().app_data(auth_handler.clone())
+                               .app_data(forum_handler.clone())
+                               .app_data(sh_users_actor.clone())
+                               .app_data(rps_game_handler.clone())
+                               .service(web::scope("/api").configure(configure_auth)
+                                                          .service(ws_route)
+                                                          .service(forum_control))
+                 }).bind("127.0.0.1:8081")?
+                   .run();
+
+    let srv_handle = server.handle();
+
+    tokio::spawn(async move {
+        signal::ctrl_c().await.unwrap();
+        srv_handle.stop(true).await;
+        System::current().stop();
+    });
+
+    server.await
 }
