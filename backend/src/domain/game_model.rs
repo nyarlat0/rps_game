@@ -33,7 +33,7 @@ pub trait PlayerQueue: Send + Sync
 {
     async fn contains(&self, user_id: Uuid) -> bool;
     /// Put a player into the queue. If another player was waiting return their id so a match can start.
-    async fn add(&self, user_id: Uuid) -> Option<Uuid>;
+    async fn add(&self, user_id: Uuid);
     async fn try_take(&self) -> Option<Uuid>;
     async fn remove(&self, user_id: Uuid);
 }
@@ -59,6 +59,7 @@ pub trait GameNotifier: Send + Sync
 {
     async fn notify(&self, user_id: Uuid, msg: ServerMsg);
     async fn get_name(&self, user_id: Uuid) -> Option<String>;
+    async fn is_online(&self, user_id: Uuid) -> bool;
 }
 
 #[async_trait]

@@ -33,64 +33,88 @@ impl<G> GameHandler<G> where G: ActiveGame
     pub async fn join(&self, user_id: Uuid) -> Result<(), GameError>
     {
         if self.game_service.has_active_game(user_id).await {
-            let game = self.game_service.get_game(user_id).await.unwrap();
-            let opp_id = game.get_opp(&user_id).unwrap();
+            if let Some(game) = self.game_service.get_game(user_id).await {
+                let opp_id = game.get_opp(&user_id).ok_or(GameError::NotFound)?;
 
-            let player_name = self.notifier
-                                  .get_name(user_id)
-                                  .await
-                                  .ok_or(GameError::Disconnected)?;
+                let player_name = match self.notifier.get_name(user_id).await {
+                    None => {
+                        self.game_service.drop_for(user_id).await?;
+                        return Err(GameError::Disconnected);
+                    }
+                    Some(name) => name,
+                };
 
-            let opp_name = self.notifier
-                               .get_name(opp_id)
-                               .await
-                               .ok_or(GameError::Disconnected)?;
+                if let Some(opp_name) = self.notifier.get_name(opp_id).await {
+                    let msg = game.into_msg(user_id, &player_name, &opp_name);
 
-            let msg = game.into_msg(user_id, &player_name, &opp_name);
-
-            self.notifier.notify(user_id, msg).await;
-            return Err(GameError::AlreadyInGame);
+                    self.notifier.notify(user_id, msg).await;
+                    return Err(GameError::AlreadyInGame);
+                } else {
+                    self.game_service.drop_for(user_id).await?;
+                };
+            }
         }
 
-        if let Some(opp_id) = self.player_queue.add(user_id).await {
+        while let Some(opp_id) = self.player_queue.try_take().await {
+            if !self.notifier.is_online(opp_id).await || opp_id == user_id {
+                continue;
+            }
+
             let active_game = self.game_service.start(user_id, opp_id).await;
 
-            let player_name = self.notifier
-                                  .get_name(user_id)
-                                  .await
-                                  .ok_or(GameError::Disconnected)?;
+            let player_name = match self.notifier.get_name(user_id).await {
+                None => {
+                    self.game_service.drop_for(user_id).await?;
+                    return Err(GameError::Disconnected);
+                }
+                Some(name) => name,
+            };
 
-            let opp_name = self.notifier
-                               .get_name(opp_id)
-                               .await
-                               .ok_or(GameError::Disconnected)?;
+            let opp_name = match self.notifier.get_name(opp_id).await {
+                None => {
+                    self.game_service.drop_for(user_id).await?;
+                    continue;
+                }
+                Some(name) => name,
+            };
 
             let msg = active_game.into_msg(user_id, &player_name, &opp_name);
 
             self.notifier.notify(user_id, msg.clone()).await;
             self.notifier.notify(opp_id, msg).await;
+            return Ok(());
         }
 
+        self.player_queue.add(user_id).await;
         Ok(())
     }
 
     pub async fn submit(&self, user_id: Uuid, mv: G::Move) -> Result<(), GameError>
     {
         let curr_game = self.game_service.submit_move(user_id, mv).await?;
-        let opp_id = curr_game.get_opp(&user_id).unwrap();
+        let opp_id = curr_game.get_opp(&user_id).ok_or(GameError::NotFound)?;
 
-        let player_name = self.notifier
-                              .get_name(user_id)
-                              .await
-                              .ok_or(GameError::Disconnected)?;
+        let player_name = match self.notifier.get_name(user_id).await {
+            None => {
+                self.game_service.drop_for(user_id).await?;
+                return Err(GameError::Disconnected);
+            }
+            Some(name) => name,
+        };
 
-        let opp_name = self.notifier
-                           .get_name(opp_id)
-                           .await
-                           .ok_or(GameError::Disconnected)?;
+        let opp_name = match self.notifier.get_name(opp_id).await {
+            None => {
+                self.game_service.drop_for(user_id).await?;
+                return Err(GameError::Disconnected);
+            }
+            Some(name) => name,
+        };
 
         if curr_game.is_ready() {
-            let fin_game = self.game_service.try_resolve(user_id).await.unwrap();
+            let fin_game = self.game_service
+                               .try_resolve(user_id)
+                               .await
+                               .ok_or(GameError::NotFound)?;
             let _ = self.recorder.record(fin_game.clone()).await?;
 
             let msg = fin_game.into_msg(user_id, &player_name, &opp_name);
@@ -110,7 +134,7 @@ impl<G> GameHandler<G> where G: ActiveGame
     pub async fn leave(&self, user_id: Uuid) -> Result<(), GameError>
     {
         if let Some(game) = self.game_service.get_game(user_id).await {
-            let opp_id = game.get_opp(&user_id).unwrap();
+            let opp_id = game.get_opp(&user_id).ok_or(GameError::NotFound)?;
 
             self.game_service.drop_for(user_id).await?;
 

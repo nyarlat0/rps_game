@@ -25,7 +25,7 @@ impl Actor for PlayersQueueActor
 // ---- Mesages for PlayersQueueActor
 
 #[derive(Message)]
-#[rtype(result = "Option<Uuid>")]
+#[rtype(result = "()")]
 pub struct Join
 {
     pub user_id: Uuid,
@@ -51,23 +51,11 @@ pub struct Contains
 
 impl Handler<Join> for PlayersQueueActor
 {
-    type Result = Option<Uuid>;
+    type Result = ();
     fn handle(&mut self, msg: Join, _ctx: &mut Self::Context) -> Self::Result
     {
         if !self.players.contains(&msg.user_id) {
-            if !self.players.is_empty() {
-                if *self.players.get(0).unwrap() != msg.user_id {
-                    let opp_id = self.players.pop_front()?;
-                    Some(opp_id)
-                } else {
-                    None
-                }
-            } else {
-                self.players.push_back(msg.user_id);
-                None
-            }
-        } else {
-            None
+            self.players.push_back(msg.user_id);
         }
     }
 }

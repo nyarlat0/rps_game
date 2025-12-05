@@ -29,12 +29,9 @@ impl PlayerQueue for ActorPlayerQueue
             .unwrap_or(false)
     }
 
-    async fn add(&self, user_id: Uuid) -> Option<Uuid>
+    async fn add(&self, user_id: Uuid)
     {
-        self.addr
-            .send(players_actor::Join { user_id })
-            .await
-            .unwrap_or(None)
+        self.addr.do_send(players_actor::Join { user_id });
     }
 
     async fn try_take(&self) -> Option<Uuid>

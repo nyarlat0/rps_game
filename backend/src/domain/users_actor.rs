@@ -162,3 +162,12 @@ impl Handler<GetName> for UsersActor
         self.user_names.get(&msg.user_id).cloned()
     }
 }
+
+impl Handler<IsOnline> for UsersActor
+{
+    type Result = bool;
+    fn handle(&mut self, msg: IsOnline, _ctx: &mut Self::Context) -> Self::Result
+    {
+        self.users_online.contains_key(&msg.user_id)
+    }
+}

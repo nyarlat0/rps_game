@@ -37,4 +37,12 @@ impl GameNotifier for WsGameNotifier
             .await
             .unwrap()
     }
+
+    async fn is_online(&self, user_id: Uuid) -> bool
+    {
+        self.users_actor
+            .send(users_actor::IsOnline { user_id })
+            .await
+            .unwrap()
+    }
 }
