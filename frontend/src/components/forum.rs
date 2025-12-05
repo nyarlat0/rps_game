@@ -30,41 +30,60 @@ fn has_mention(s: &str, username: &str) -> bool
      .any(|tail| tail.starts_with(username))
 }
 
-#[inline]
-fn is_word(b: u8) -> bool
+fn is_word_char(ch: char) -> bool
 {
-    matches!(b, b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_')
+    ch.is_alphanumeric() || ch == '_'
 }
 
 fn render_mentions(text: &str) -> impl IntoView + use<>
 {
-    let bs = text.as_bytes();
     let mut out = Vec::new();
-    let (mut i, mut start) = (0, 0);
+    let mut last_byte = 0;
 
-    while i < bs.len() {
-        if bs[i] == b'@' {
+    let chars: Vec<(usize, char)> = text.char_indices().collect();
+    let mut i = 0;
+
+    while i < chars.len() {
+        let (byte_idx, ch) = chars[i];
+
+        if ch == '@' {
             let mut j = i + 1;
-            if j < bs.len() && is_word(bs[j]) {
-                while j < bs.len() && is_word(bs[j]) {
+
+            if j < chars.len() && is_word_char(chars[j].1) {
+                while j < chars.len() && is_word_char(chars[j].1) {
                     j += 1;
                 }
 
-                if start < i {
-                    out.push(text[start..i].to_string().into_any());
-                }
-                out.push(view! { <span class="mention-name">{&text[i..j]}</span> }.into_any());
+                let mention_start = byte_idx;
+                let mention_end = if j < chars.len() {
+                    chars[j].0
+                } else {
+                    text.len()
+                };
 
-                start = j;
+                if last_byte < mention_start {
+                    out.push(text[last_byte..mention_start].to_string().into_any());
+                }
+
+                out.push(view! {
+                             <span class="mention-name">
+                                 { &text[mention_start..mention_end] }
+                             </span>
+                         }.into_any());
+
+                last_byte = mention_end;
                 i = j;
                 continue;
             }
         }
+
         i += 1;
     }
-    if start < bs.len() {
-        out.push(text[start..].to_string().into_any());
+
+    if last_byte < text.len() {
+        out.push(text[last_byte..].to_string().into_any());
     }
+
     view! { <> {out} </> }
 }
 
@@ -619,14 +638,11 @@ fn display_time(dt_utc: DateTime<Utc>, lang_code: &str) -> String
     let m = dt.minute();
 
     if dt.date_naive() == now.date_naive() {
-        // Сегодня: только время
         format!("{:02}:{:02}", h, m)
     } else if dt.year() == now.year() {
-        // В этом году: `2 Dec 04:25` / `2 дек 04:25`
         let month = months[(dt.month() - 1) as usize];
         format!("{} {} {:02}:{:02}", dt.day(), month, h, m)
     } else {
-        // Старый год: `02.12.24 04:25`
         format!("{:02}.{:02}.{:02} {:02}:{:02}",
                 dt.day(),
                 dt.month(),
