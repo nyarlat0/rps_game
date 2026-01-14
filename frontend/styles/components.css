@@ -86,6 +86,30 @@
     min-height: 30ch;
   }
 
+  .chess-board {
+    --size: min(80vmin, 480px);
+    width: var(--size);
+    height: var(--size);
+
+    border-radius: var(--radius);
+
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    width: min(80vmin, 480px);
+    aspect-ratio: 1 / 1;
+
+    border: 2px solid #333;
+  }
+
+  .square {
+    display: grid;
+    place-items: center;
+    font-size: clamp(1.5rem, 5vmin, 3rem);
+  }
+
+  .square.light { background: #f0d9b5; }
+  .square.dark  { background: #b58863; }
+
   .card, [popover] {
     color: var(--ink);
     background: var(--surface);

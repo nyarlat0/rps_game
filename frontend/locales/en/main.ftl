@@ -39,6 +39,7 @@ unauth-home-register = Register
 games-hub-title = Games
 games-hub-subtitle = Choose a game to play:
 games-hub-rps = Rock-Paper-Scissors
+games-hub-nolan = Nolan Chess
 games-hub-home = { -home-label }
 rps-waiting = Waiting for opponent...
 rps-playing-against-label = Playing against:

@@ -2,6 +2,7 @@ use actix::prelude::*;
 use actix_web::{get, rt, web, HttpRequest, HttpResponse, Responder};
 use actix_ws::AggregatedMessage;
 use futures_util::StreamExt;
+use shared::chess::ChessGameReq;
 use shared::{rps_game::RpsGameReq, ws_messages::*};
 use tokio::sync::mpsc;
 use tokio::time::{interval, Duration, Instant, MissedTickBehavior};
@@ -9,6 +10,7 @@ use uuid::Uuid;
 
 use crate::application::auth_handler::AuthHandler;
 use crate::application::game_handler::GameHandler;
+use crate::domain::nolan_chess_model::ChessGame;
 use crate::domain::rps_model::RpsGame;
 use crate::domain::users_actor::{self, UsersActor};
 use crate::infrastructure::auth::extract_id;
@@ -17,6 +19,7 @@ use crate::infrastructure::auth::extract_id;
 pub async fn ws_route(req: HttpRequest,
                       body: web::Payload,
                       rps_handler: web::Data<GameHandler<RpsGame>>,
+                      ch_handler: web::Data<GameHandler<ChessGame>>,
                       users_actor: web::Data<Addr<UsersActor>>,
                       auth_handler: web::Data<AuthHandler>)
                       -> actix_web::Result<impl Responder>
@@ -52,6 +55,7 @@ pub async fn ws_route(req: HttpRequest,
                              .unwrap();
 
     let gh = rps_handler.clone();
+    let ch_h = ch_handler.clone();
 
     rt::spawn(async move {
         let mut hb = interval(Duration::from_secs(10));
@@ -90,6 +94,7 @@ pub async fn ws_route(req: HttpRequest,
                                         user_id,
                                         &users_actor,
                                         &gh,
+                                        &ch_h,
                                         &mut session)
                                         .await {break;}
                                 },
@@ -122,6 +127,7 @@ async fn handle_client_text(text: String,
                             user_id: Uuid,
                             users_actor: &Addr<UsersActor>,
                             rps_handler: &GameHandler<RpsGame>,
+                            ch_handler: &GameHandler<ChessGame>,
                             session: &mut actix_ws::Session)
                             -> bool
 {
@@ -142,6 +148,9 @@ async fn handle_client_text(text: String,
             let out = serde_json::to_string(&serv_msg).unwrap();
             session.text(out).await.is_ok()
         }
+        //
+        // Handle messages form rps players
+        //
         ClientMsg::RpsGameMsg(game_req) => match game_req {
             RpsGameReq::Start => {
                 if let Err(err) = rps_handler.join(user_id).await {
@@ -165,6 +174,40 @@ async fn handle_client_text(text: String,
 
             RpsGameReq::Leave => {
                 if let Err(err) = rps_handler.leave(user_id).await {
+                    let msg = ServerMsg::GameErrorMsg(err);
+                    let out = serde_json::to_string(&msg).unwrap();
+                    session.text(out).await.is_ok()
+                } else {
+                    true
+                }
+            }
+        },
+        //
+        // Handle messages form chess players
+        //
+        ClientMsg::ChessGameMsg(game_req) => match game_req {
+            ChessGameReq::Start => {
+                if let Err(err) = ch_handler.join(user_id).await {
+                    let msg = ServerMsg::GameErrorMsg(err);
+                    let out = serde_json::to_string(&msg).unwrap();
+                    session.text(out).await.is_ok()
+                } else {
+                    true
+                }
+            }
+
+            ChessGameReq::Submit(mv) => {
+                if let Err(err) = ch_handler.submit(user_id, mv).await {
+                    let msg = ServerMsg::GameErrorMsg(err);
+                    let out = serde_json::to_string(&msg).unwrap();
+                    session.text(out).await.is_ok()
+                } else {
+                    true
+                }
+            }
+
+            ChessGameReq::Leave => {
+                if let Err(err) = ch_handler.leave(user_id).await {
                     let msg = ServerMsg::GameErrorMsg(err);
                     let out = serde_json::to_string(&msg).unwrap();
                     session.text(out).await.is_ok()

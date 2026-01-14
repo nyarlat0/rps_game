@@ -12,6 +12,7 @@ pub mod ws;
 
 use crate::application::game_handler::GameHandler;
 use crate::application::{auth_handler::*, forum_handler::*};
+use crate::domain::nolan_chess_model::ChessGame;
 use crate::domain::rps_model::RpsGame;
 use crate::domain::users_actor::UsersActor;
 use crate::infrastructure::{auth::*, forum::*, game::*};
@@ -36,6 +37,7 @@ async fn main() -> std::io::Result<()>
     let users_actor = UsersActor::new().start();
     let sh_users_actor = web::Data::new(users_actor.clone());
 
+    // Rps game actors and services
     let players_actor = PlayersQueueActor::new().start();
     let rps_player_qu = Arc::new(ActorPlayerQueue::new(players_actor));
     let rps_service = InMemoryGameService::<RpsGame>::new();
@@ -44,14 +46,25 @@ async fn main() -> std::io::Result<()>
 
     let rps_game_handler = web::Data::new(GameHandler::<RpsGame>::new(rps_service,
                                                                       rps_player_qu,
-                                                                      notifier,
-                                                                      game_recorder));
+                                                                      notifier.clone(),
+                                                                      game_recorder.clone()));
+
+    // Chess game actors and services
+    let ch_players_actor = PlayersQueueActor::new().start();
+    let ch_player_qu = Arc::new(ActorPlayerQueue::new(ch_players_actor));
+    let ch_service = InMemoryGameService::<ChessGame>::new();
+
+    let ch_game_handler = web::Data::new(GameHandler::<ChessGame>::new(ch_service,
+                                                                       ch_player_qu,
+                                                                       notifier,
+                                                                       game_recorder));
 
     HttpServer::new(move || {
         App::new().app_data(auth_handler.clone())
                   .app_data(forum_handler.clone())
                   .app_data(sh_users_actor.clone())
                   .app_data(rps_game_handler.clone())
+                  .app_data(ch_game_handler.clone())
                   .service(web::scope("/api").configure(configure_auth)
                                              .service(ws_route)
                                              .service(forum_control))

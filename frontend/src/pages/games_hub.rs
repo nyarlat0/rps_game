@@ -13,6 +13,11 @@ pub fn GamesHub() -> impl IntoView
             >
                 { move || tr!("games-hub-rps") }
             </a>
+            <a href = "/games/nolan_chess" class="button"
+            style ="margin-block-start: var(--s1); margin-top: auto; margin-bottom: auto;"
+            >
+                { move || tr!("games-hub-nolan") }
+            </a>
             <a href = "/" class="button secondary" style ="margin-block-start: var(--s1); margin-top: auto;">
                 { move || tr!("games-hub-home") }
             </a>

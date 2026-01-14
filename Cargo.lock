@@ -451,6 +451,7 @@ dependencies = [
  "dotenvy",
  "futures-util",
  "jsonwebtoken",
+ "nolan_chess",
  "once_cell",
  "serde",
  "serde_json",
@@ -1308,6 +1309,7 @@ dependencies = [
  "leptos-fluent",
  "leptos-use",
  "leptos_router",
+ "nolan_chess",
  "serde",
  "serde_json",
  "shared",
@@ -2369,6 +2371,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60993920e071b0c9b66f14e2b32740a4e27ffc82854dcd72035887f336a09a28"
 
 [[package]]
+name = "nolan_chess"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "slab",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3213,6 +3223,7 @@ name = "shared"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "nolan_chess",
  "serde",
  "serde_json",
  "sqlx",

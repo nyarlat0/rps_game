@@ -19,4 +19,6 @@ js-sys = "0.3.83"
 web-sys = "0.3.83"
 codee = "0.3.4"
 wasm-bindgen-futures = "0.4.56"
+
 shared = {path = "../shared"}
+nolan_chess = {path = "../nolan_chess"}

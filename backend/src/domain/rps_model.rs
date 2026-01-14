@@ -42,6 +42,7 @@ impl FinishedGame for FinishedRpsGame
 
         ServerMsg::RpsGameMsg(RpsGameState::Finished(info))
     }
+
     fn resolve(&self) -> GameResult
     {
         let [your_move, opp_move] = &self.moves;

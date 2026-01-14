@@ -35,6 +35,7 @@ auth-home-logout = Выйти
 games-hub-title = Игры
 games-hub-subtitle = Выберите игру:
 games-hub-rps = Камень-ножницы-бумага
+games-hub-nolan = Шахматы Нолана
 games-hub-home = { -home-label }
 rps-waiting = Ожидание соперника...
 rps-playing-against-label = Игра против:

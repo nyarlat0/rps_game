@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    chess::{ChessGameReq, ChessGameState},
     forum::*,
     game::GameError,
     rps_game::{RpsGameReq, RpsGameState},
@@ -12,6 +13,7 @@ pub enum ClientMsg
 {
     GetStats,
     RpsGameMsg(RpsGameReq),
+    ChessGameMsg(ChessGameReq),
 }
 
 #[non_exhaustive]
@@ -21,6 +23,7 @@ pub enum ServerMsg
     StatsMsg(StatsInfo),
     NewPostMsg(ForumPost),
     RpsGameMsg(RpsGameState),
+    ChessGameMsg(ChessGameState),
     WsErrorMsg(WsError),
     GameErrorMsg(GameError),
 }

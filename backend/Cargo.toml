@@ -27,3 +27,4 @@ chrono = {workspace = true}
 uuid = {workspace = true}
 
 shared = {path = "../shared"}
+nolan_chess = {path = "../nolan_chess"}

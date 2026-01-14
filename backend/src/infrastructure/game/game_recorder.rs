@@ -4,6 +4,7 @@ use sqlx::PgPool;
 
 use crate::domain::{
     game_model::{FinishedGame, GameRecorder},
+    nolan_chess_model::ChessGame,
     rps_model::{FinishedRpsGame, RpsGame},
 };
 
@@ -111,6 +112,15 @@ impl GameRecorder<RpsGame> for PsqlGameRecorder
             }
         }
 
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl GameRecorder<ChessGame> for PsqlGameRecorder
+{
+    async fn record(&self, _game: ChessGame) -> Result<(), GameError>
+    {
         Ok(())
     }
 }

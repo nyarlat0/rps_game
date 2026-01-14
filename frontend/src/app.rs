@@ -171,6 +171,7 @@ fn AuthView(user_info: UserInfo) -> impl IntoView
             <ParentRoute path=path!("/games") view=|| {view! {<Outlet />}} >
                 <Route path=path!("") view=GamesHub />
                 <Route path=path!("rps") view=RpsGame />
+                <Route path=path!("nolan_chess") view=NolanChess />
             </ParentRoute>
         </Routes>
     }
