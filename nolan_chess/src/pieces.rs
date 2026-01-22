@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::board::Board;
 use crate::engine::Castling;
+use crate::State;
 
 pub const ROOK_DIRS: &[(i8, i8)] = &[(1, 0),
                                      (-1, 0),
@@ -99,18 +100,10 @@ pub struct PieceView
     pub age: usize,    // pid
     pub t: usize,
     pub fut_seen: usize,
+    pub loop_turn: usize,
     pub kind: PieceKind,
     pub color: Color,
     pub sq: Sq,
-    pub inverted: bool,
-    pub active: bool,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Piece
-{
-    pub kind: PieceKind,
-    pub color: Color,
     pub inverted: bool,
     pub active: bool,
 }
@@ -141,6 +134,32 @@ impl Sq
 
 impl PieceView
 {
+    pub fn from_state(st: &State, origin: usize, age: usize) -> Self
+    {
+        let State { x,
+                    y,
+                    t,
+                    fut_seen,
+                    kind,
+                    color,
+                    inverted,
+                    active,
+                    loop_turn,
+                    .. } = *st;
+        let sq = Sq(x, y);
+
+        Self { origin,
+               age,
+               t,
+               fut_seen,
+               loop_turn,
+               sq,
+               kind,
+               color,
+               inverted,
+               active }
+    }
+
     pub fn knows_future(&self) -> bool
     {
         self.fut_seen > self.t
@@ -154,6 +173,12 @@ impl PieceView
     pub fn can_move(&self) -> bool
     {
         self.color == Color::from_board(self.t)
+    }
+
+    pub fn fix_with(&mut self, piv: PieceView)
+    {
+        self.sq = piv.sq;
+        self.kind = piv.kind;
     }
 
     fn ray_moves(&self, dirs: &[(i8, i8)], board: &Board) -> Vec<Sq>

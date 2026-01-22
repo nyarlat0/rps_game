@@ -3,29 +3,50 @@ use std::{cmp::min, collections::HashMap};
 
 use crate::*;
 
-type WorldLine = Vec<State>;
-
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Engine
 {
-    pub wlines: Vec<WorldLine>,
-    pub move_history: HashMap<usize, HashMap<usize, Move>>, // t -> fut_seen -> Move
+    pub wlines: Vec<Vec<State>>, // wid -> age -> state
+    pub move_history: HashMap<MoveId, Move>,
     pub preboards: HashMap<usize, PreBoard>,
     pub boards: HashMap<usize, Board>,
+    pub pbuf: HashMap<PieceId, (usize, usize)>, // pieceid -> (wid, age)
     pub turn: Color,
     pub action_lines: (Option<usize>, Option<usize>),
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct State
 {
     pub t: usize,
     pub x: usize,
     pub y: usize,
-    pub alive: bool,
-    pub informed: Vec<(usize, usize)>, // (wid, pid)
     pub fut_seen: usize,
-    pub p: Piece,
+    pub loop_turn: usize,
+    pub alive: bool,
+    pub active: bool,
+    pub kind: PieceKind,
+    pub color: Color,
+    pub inverted: bool,
+    pub informed: Vec<PieceId>,
+}
+
+/// Long-term identification of a move
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct MoveId
+{
+    t: usize,
+    fut_seen: usize,
+    loop_turn: usize,
+}
+
+/// Long-term identification of a piece
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PieceId
+{
+    pub wid: usize,
+    pub fut_seen: usize,
+    pub loop_turn: usize,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,10 +59,8 @@ pub enum Castling
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Move
 {
-    pub origin: usize,
-    pub age: usize,
+    pub pid: PieceId,
     pub t: usize,
-    pub fut_seen: usize,
     pub sq: Sq,
     pub to_past: bool,
     pub castling: Option<Castling>,
@@ -80,37 +99,53 @@ pub struct PieceCollision
     collided: PieceView,
 }
 
-impl BoardConflict {}
+impl MoveId
+{
+    pub fn from_piv(piv: PieceView) -> Self
+    {
+        Self { t: piv.t,
+               fut_seen: piv.fut_seen,
+               loop_turn: piv.loop_turn }
+    }
+
+    pub fn from_state(st: &State) -> Self
+    {
+        Self { t: st.t,
+               fut_seen: st.fut_seen,
+               loop_turn: st.loop_turn }
+    }
+}
 
 impl Engine
 {
     /// Returns None if figure is dead
-    pub fn get_piv(&self, wid: usize, pid: usize) -> Option<PieceView>
+    pub fn get_piv(&self, wid: usize, age: usize) -> Option<PieceView>
     {
         let line = self.wlines.get(wid)?;
-        let state = line.get(pid)?.clone();
+        let state = line.get(age)?.clone();
 
         if !state.alive {
             return None;
         }
 
-        let Piece { kind,
-                    color,
-                    inverted,
-                    active, } = state.p;
+        Some(PieceView::from_state(&state, wid, age))
+    }
 
-        let sq = Sq(state.x, state.y);
-        let (origin, age, t, fut_seen) = (wid, pid, state.t, state.fut_seen);
+    /// Returns None only if state not found.
+    /// Looses info about live/death!!!
+    pub fn get_piv_necro(&self, wid: usize, age: usize) -> Option<PieceView>
+    {
+        let line = self.wlines.get(wid)?;
+        let state = line.get(age)?.clone();
 
-        Some(PieceView { origin,
-                         age,
-                         t,
-                         fut_seen,
-                         sq,
-                         kind,
-                         color,
-                         inverted,
-                         active })
+        Some(PieceView::from_state(&state, wid, age))
+    }
+
+    /// Returns None if figure is dead
+    pub fn get_piv_from_mv(&self, mv: Move) -> Option<PieceView>
+    {
+        let (wid, age) = *self.pbuf.get(&mv.pid)?;
+        self.get_piv(wid, age)
     }
 
     pub fn make_preboard(&self, t: usize) -> Option<PreBoard>
@@ -120,20 +155,7 @@ impl Engine
         for (origin, wline) in self.wlines.iter().enumerate() {
             for (age, state) in wline.iter().enumerate() {
                 if state.t == t && state.alive {
-                    let Piece { kind,
-                                color,
-                                inverted,
-                                active, } = state.p;
-                    let sq = Sq(state.x, state.y);
-                    board.space[state.x][state.y].push(PieceView { origin,
-                                                                   age,
-                                                                   t,
-                                                                   fut_seen: state.fut_seen,
-                                                                   sq,
-                                                                   kind,
-                                                                   color,
-                                                                   inverted,
-                                                                   active });
+                    board.space[state.x][state.y].push(PieceView::from_state(state, origin, age));
                 }
             }
         }
@@ -171,9 +193,9 @@ impl Engine
                    age: t })
     }
 
-    pub fn possible_moves(&self, wid: usize, pid: usize) -> Result<Vec<Move>, EngineErr>
+    pub fn possible_moves(&self, wid: usize, age: usize) -> Result<Vec<Move>, EngineErr>
     {
-        let piv = self.get_piv(wid, pid).ok_or(EngineErr::WrongPiece)?;
+        let piv = self.get_piv(wid, age).ok_or(EngineErr::WrongPiece)?;
         let pres_board = self.make_board(piv.t)
                              .map_err(|err| EngineErr::BoardErr(err))?;
 
@@ -433,18 +455,18 @@ impl Engine
         None
     }
 
-    pub fn kill_piece(&mut self, wid: usize, pid: usize) -> Result<(), EngineErr>
+    pub fn kill_piece(&mut self, wid: usize, age: usize) -> Result<(), EngineErr>
     {
         let wl = self.wlines.get_mut(wid).ok_or(EngineErr::WrongPiece)?;
 
         let mut times = Vec::new();
 
-        for st in &mut wl[pid..] {
+        for st in &mut wl[age..] {
             st.alive = false;
             times.push(st.t);
         }
 
-        self.update_preboards(&times)?;
+        self.make_preboards(&times)?;
         Ok(())
     }
 
@@ -454,13 +476,7 @@ impl Engine
 
         for st in wl[..piv.age].iter().rev() {
             if (st.x, st.y) != (piv.sq.0, piv.sq.1) {
-                let mv = self.move_history
-                             .get(&st.t)
-                             .ok_or(EngineErr::WrongMove)?
-                             .get(&st.fut_seen)
-                             .ok_or(EngineErr::WrongMove)?;
-
-                self.undo_mv(*mv)?;
+                self.undo_mv(MoveId::from_state(st))?;
                 break;
             }
         }
@@ -468,33 +484,92 @@ impl Engine
         Ok(())
     }
 
-    pub fn undo_mv(&mut self, mv: Move) -> Result<(), EngineErr>
+    /// Clears move from move history,
+    /// undoes position change of the piece
+    /// and makes it active again
+    pub fn undo_mv(&mut self, mvid: MoveId) -> Result<(), EngineErr>
     {
-        let brd_moves = self.move_history
-                            .get_mut(&mv.t)
-                            .ok_or(EngineErr::WrongMove)?;
-        brd_moves.remove(&mv.fut_seen).ok_or(EngineErr::WrongMove)?;
+        // Remove old move
+        let mv = self.move_history
+                     .remove(&mvid)
+                     .ok_or(EngineErr::WrongMove)?;
 
-        let bf = self.get_piv(mv.origin, mv.age)
-                     .ok_or(EngineErr::WrongPiece)?;
+        // Piv before move, undid states will be set to it
+        let bf_piv = self.get_piv_from_mv(mv).ok_or(EngineErr::WrongPiece)?;
+
+        // Piv just after undid move,
+        // is used to know what posion to undo
+        let mut ud_piv = self.get_piv_necro(bf_piv.origin, bf_piv.age + 1)
+                             .ok_or(EngineErr::WrongPiece)?;
 
         let wl = self.wlines
-                     .get_mut(mv.origin)
+                     .get_mut(bf_piv.origin)
                      .ok_or(EngineErr::WrongPiece)?;
+
+        // Make piece active again
+        {
+            let mv_st = wl.get_mut(bf_piv.age).ok_or(EngineErr::WrongPiece)?;
+            mv_st.active = true;
+        }
 
         let mut times = Vec::new();
 
-        for st in wl[(mv.age + 1)..].iter_mut() {
-            if (st.x, st.y) == (mv.sq.0, mv.sq.1) {
-                st.x = bf.sq.0;
-                st.y = bf.sq.1;
+        // If move was to past then clear the whole backward loop
+        // and its moves
+        if mv.to_past {
+            let mut del_age = bf_piv.age + 1;
+            let mut prev_piv = bf_piv;
+
+            for (age, st) in wl.iter_mut().enumerate().skip(bf_piv.age + 1) {
+                // As soon as state time is past action point
+                // backward loop is finished
+                if st.t > mv.t {
+                    break;
+                }
+
+                // If it moved again then clear move and update undid piv
+                if (st.x, st.y) != (ud_piv.sq.0, ud_piv.sq.1) {
+                    self.move_history
+                        .remove(&MoveId::from_piv(prev_piv))
+                        .ok_or(EngineErr::WrongMove)?;
+
+                    ud_piv = PieceView::from_state(st, bf_piv.origin, age);
+                }
+
+                // Update clear state border and save time for preboard updates later
+                del_age = age;
+                times.push(st.t);
+
+                prev_piv = PieceView::from_state(st, bf_piv.origin, age);
+            }
+
+            // Clear backward loop states from worldline
+            wl.drain((bf_piv.age + 1)..=del_age);
+        }
+
+        for st in wl.iter_mut().skip(bf_piv.age + 1) {
+            if (st.x, st.y) == (ud_piv.sq.0, ud_piv.sq.1) {
+                st.x = bf_piv.sq.0;
+                st.y = bf_piv.sq.1;
+                st.kind = bf_piv.kind;
+
                 times.push(st.t);
             } else {
                 break;
             }
         }
 
-        self.update_preboards(&times)?;
+        self.make_preboards(&times)?;
+
+        Ok(())
+    }
+
+    fn rm_mv(&mut self, mvid: MoveId) -> Result<(), EngineErr>
+    {
+        // Remove old move
+        self.move_history
+            .remove(&mvid)
+            .ok_or(EngineErr::WrongMove)?;
 
         Ok(())
     }
@@ -514,10 +589,25 @@ impl Engine
         todo!()
     }
 
-    pub fn update_preboards(&mut self, times: &Vec<usize>) -> Result<(), EngineErr>
+    /// Cycles through all world lines
+    /// and creates preboards for specified times
+    pub fn make_preboards(&mut self, times: &Vec<usize>) -> Result<(), EngineErr>
     {
+        let mut pbs = HashMap::new();
         for &t in times {
-            let pb = self.make_preboard(t).ok_or(EngineErr::AbsentBoard)?;
+            pbs.insert(t, PreBoard::new(t));
+        }
+
+        for (origin, wline) in self.wlines.iter().enumerate() {
+            for (age, state) in wline.iter().enumerate() {
+                if times.contains(&state.t) && state.alive {
+                    let pb = pbs.get_mut(&state.t).ok_or(EngineErr::AbsentBoard)?;
+                    pb.space[state.x][state.y].push(PieceView::from_state(state, origin, age));
+                }
+            }
+        }
+
+        for (t, pb) in pbs {
             self.preboards.insert(t, pb);
         }
 
