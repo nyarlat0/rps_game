@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "shared",
     "backend",
+    "nolan_chess",
     "frontend"]
 
 [workspace.dependencies]
